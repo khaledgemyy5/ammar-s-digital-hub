@@ -152,155 +152,325 @@ export default function AdminStatus() {
 
   const handleSeedDemo = async () => {
     setSeeding(true);
+    let counts = { settings: 0, categories: 0, items: 0, projects: 0, events: 0 };
+
     try {
-      // Create demo categories
+      // 1. Update site_settings
+      const settingsUpdate = {
+        nav_config: [
+          { id: 'home', label: 'Home', path: '/', visible: true, order: 0 },
+          { id: 'projects', label: 'Projects', path: '/projects', visible: true, order: 1 },
+          { id: 'writing', label: 'Writing', path: '/writing', visible: true, order: 2 },
+          { id: 'resume', label: 'Resume', path: '/resume', visible: true, order: 3, isCta: true }
+        ],
+        home_sections: [
+          { id: 'hero', visible: true, order: 0 },
+          { id: 'experience_snapshot', visible: true, order: 1, limit: 3 },
+          { id: 'featured_projects', visible: true, order: 2, limit: 3 },
+          { id: 'how_i_work', visible: true, order: 3 },
+          { id: 'selected_writing_preview', visible: true, order: 4, limit: 3 },
+          { id: 'contact_cta', visible: true, order: 5 }
+        ],
+        theme: { accentColor: '#135BEC', defaultMode: 'light', font: 'ibm-plex' },
+        seo: {
+          siteTitle: 'Ammar Jaber | Technical Product Manager',
+          siteDescription: 'Technical Product Manager with expertise in AI/LLM products, developer platforms, and B2B SaaS.'
+        },
+        pages: {
+          resume: { enabled: true, pdfUrl: '', showCopyText: true, showDownload: true },
+          contact: { 
+            enabled: true, 
+            email: 'hello@ammarjaber.com', 
+            linkedin: 'https://linkedin.com/in/ammarjaber',
+            calendar: 'https://cal.com/ammarjaber'
+          }
+        }
+      };
+
+      const { error: settingsError } = await (supabase as any)
+        .from('site_settings')
+        .update(settingsUpdate)
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      if (!settingsError) counts.settings = 1;
+
+      // 2. Create categories
       const categories = [
-        { name: 'Product', slug: 'product', enabled: true, order_index: 0 },
-        { name: 'AI/LLM', slug: 'ai-llm', enabled: true, order_index: 1 },
-        { name: 'Startups', slug: 'startups', enabled: true, order_index: 2 },
+        { slug: 'product-management', name: 'Product Management', enabled: true, order_index: 0 },
+        { slug: 'ai-technology', name: 'AI & Technology', enabled: true, order_index: 1 }
       ];
 
       for (const cat of categories) {
-        await (supabase as any)
+        const { error } = await (supabase as any)
           .from('writing_categories')
           .upsert(cat, { onConflict: 'slug' });
+        if (!error) counts.categories++;
       }
 
-      // Get category IDs
-      const { data: cats } = await supabase
-        .from('writing_categories' as any)
+      // 3. Get category IDs
+      const { data: cats } = await (supabase as any)
+        .from('writing_categories')
         .select('id, slug');
       
-      const catMap = (cats || []).reduce((acc: Record<string, string>, c: any) => {
+      const catMap = (cats || []).reduce((acc: Record<string, string>, c: { id: string; slug: string }) => {
         acc[c.slug] = c.id;
         return acc;
-      }, {});
+      }, {} as Record<string, string>);
 
-      // Create demo writing items
+      // 4. Create writing items
       const writingItems = [
         {
-          title: 'Building LLM-Powered Features: A Product Manager Guide',
-          url: 'https://medium.com/example/llm-features',
+          title: 'Building LLM-Powered Features: A Product Manager\'s Guide',
+          url: 'https://medium.com/@ammarjaber/llm-features-guide',
           platform_label: 'Medium',
-          category_id: catMap['ai-llm'],
+          category_id: catMap['ai-technology'],
           language: 'EN',
           featured: true,
           enabled: true,
           order_index: 0,
+          show_why: true,
+          why_this_matters: 'Practical frameworks for shipping AI features that actually solve user problems.'
         },
         {
-          title: 'The Art of Technical Product Management',
-          url: 'https://blog.example.com/technical-pm',
+          title: 'The Art of Technical Product Specifications',
+          url: 'https://blog.ammarjaber.com/technical-specs',
           platform_label: 'Personal Blog',
-          category_id: catMap['product'],
+          category_id: catMap['product-management'],
           language: 'EN',
           featured: true,
           enabled: true,
           order_index: 1,
+          show_why: false
         },
         {
-          title: 'كيف تبني منتجات تقنية ناجحة',
-          url: 'https://arabic-platform.com/article',
-          platform_label: 'Arabic Platform',
-          category_id: catMap['startups'],
+          title: 'Why Most MVPs Fail (And How to Avoid It)',
+          url: 'https://medium.com/@ammarjaber/mvp-failures',
+          platform_label: 'Medium',
+          category_id: catMap['product-management'],
+          language: 'EN',
+          featured: true,
+          enabled: true,
+          order_index: 2,
+          show_why: true,
+          why_this_matters: 'Common anti-patterns I\'ve seen in 50+ product launches.'
+        },
+        {
+          title: 'كيف تبني منتجات تقنية ناجحة في السوق العربي',
+          url: 'https://arabic-tech.com/articles/building-products',
+          platform_label: 'Arabic Tech',
+          category_id: catMap['product-management'],
           language: 'AR',
           featured: false,
           enabled: true,
-          order_index: 2,
+          order_index: 3,
+          show_why: true,
+          why_this_matters: 'دروس مستفادة من بناء منتجات تقنية في منطقة الشرق الأوسط.'
         },
+        {
+          title: 'مستقبل الذكاء الاصطناعي في المنتجات الرقمية',
+          url: 'https://arabic-tech.com/articles/ai-future',
+          platform_label: 'Arabic Tech',
+          category_id: catMap['ai-technology'],
+          language: 'AR',
+          featured: false,
+          enabled: true,
+          order_index: 4,
+          show_why: false
+        },
+        {
+          title: 'API Design Principles for Developer Experience',
+          url: 'https://dev.to/ammarjaber/api-design-dx',
+          platform_label: 'Dev.to',
+          category_id: catMap['ai-technology'],
+          language: 'EN',
+          featured: false,
+          enabled: true,
+          order_index: 5,
+          show_why: false
+        }
       ];
 
       for (const item of writingItems) {
         if (item.category_id) {
-          await (supabase as any)
+          const { error } = await (supabase as any)
             .from('writing_items')
             .upsert(item, { onConflict: 'url' });
+          if (!error) counts.items++;
         }
       }
 
-      // Create demo projects
+      // 5. Create projects
       const projects = [
         {
           slug: 'ai-recommendation-engine',
           title: 'AI-Powered Recommendation Engine',
-          summary: 'Built an LLM-based recommendation system that increased conversion rates by 35% through personalized suggestions.',
-          tags: ['AI/LLM', 'Product', 'E-commerce'],
+          summary: 'Led the development of an LLM-based recommendation system that increased conversion rates by 35% through personalized product suggestions.',
+          tags: ['AI/LLM', 'E-commerce', 'Product'],
           status: 'PUBLIC',
           detail_level: 'FULL',
           featured: true,
           published: true,
           sections_config: [
-            { id: 'snapshot', visible: true, order: 0 },
-            { id: 'problem_framing', visible: true, order: 1 },
-            { id: 'approach_decisions', visible: true, order: 2 },
-            { id: 'outcome_learnings', visible: true, order: 3 },
+            { id: 'overview', visible: true, order: 0 },
+            { id: 'problem', visible: true, order: 1 },
+            { id: 'approach', visible: true, order: 2 },
+            { id: 'impact', visible: true, order: 3 },
+            { id: 'learnings', visible: true, order: 4 }
           ],
           content: {
-            snapshot: {
-              problem: 'E-commerce platform had low conversion rates due to generic recommendations',
-              role: 'Technical Product Manager leading a team of 5 engineers',
-              approach: 'Built LLM-powered personalization using embeddings and real-time user signals',
-              outcome: '35% increase in conversion, 20% increase in average order value',
-            },
-            problem_framing: 'Our e-commerce platform was showing the same products to all users, resulting in low engagement and conversion rates. Users were overwhelmed with irrelevant options.',
-            approach_decisions: 'We chose to build an LLM-based system that could understand product semantics and user intent. Key decisions included using embeddings for product similarity and implementing real-time personalization.',
-            outcome_learnings: 'The system exceeded expectations with 35% conversion improvement. Key learning: personalization works best when combined with clear user intent signals.',
+            overview: 'Designed and shipped an AI-powered recommendation system for a major e-commerce platform serving 2M+ monthly active users.',
+            problem: 'The existing recommendation engine relied on basic collaborative filtering, resulting in generic suggestions with stagnant 2.1% conversion rates.',
+            approach: 'Built a hybrid system combining LLM embeddings for semantic understanding with real-time behavioral signals.',
+            impact: '35% increase in conversion rate, 20% increase in AOV, 10M+ daily recommendations with <50ms latency.',
+            learnings: 'Personalization works best when combined with clear user intent signals. Invest early in A/B testing infrastructure.'
           },
+          metrics: [
+            { label: 'Conversion Increase', value: '+35%' },
+            { label: 'AOV Increase', value: '+20%' },
+            { label: 'Daily Recommendations', value: '10M+' }
+          ]
         },
         {
           slug: 'developer-platform-redesign',
           title: 'Developer Platform & API Redesign',
-          summary: 'Led the complete redesign of a developer platform serving 50K+ developers, improving onboarding completion by 60%.',
-          tags: ['Product', 'Engineering', 'API'],
+          summary: 'Led complete redesign of a developer platform serving 50K+ developers. Improved onboarding completion by 60%.',
+          tags: ['Developer Experience', 'API', 'Platform'],
           status: 'PUBLIC',
           detail_level: 'FULL',
           featured: true,
           published: true,
           sections_config: [
-            { id: 'snapshot', visible: true, order: 0 },
-            { id: 'problem_framing', visible: true, order: 1 },
+            { id: 'overview', visible: true, order: 0 },
+            { id: 'problem', visible: true, order: 1 },
+            { id: 'approach', visible: true, order: 2 },
+            { id: 'impact', visible: true, order: 3 }
           ],
           content: {
-            snapshot: {
-              problem: 'Developer onboarding was complex with 40% drop-off rate',
-              role: 'Product Manager working with platform engineering team',
-              approach: 'Redesigned API documentation, added interactive tutorials, simplified authentication',
-              outcome: '60% improvement in onboarding completion, NPS increased by 25 points',
-            },
+            overview: 'Redesigned a B2B developer platform from the ground up, focusing on developer experience and time-to-first-API-call.',
+            problem: 'Developer onboarding had a 40% drop-off rate. Authentication was complex (7 steps), and NPS was -15.',
+            approach: 'Reduced auth from 7 steps to 2, built interactive API explorer, added code snippets in 8 languages.',
+            impact: 'Onboarding completion improved to 96%. Time-to-first-API-call reduced to 8min. Developer NPS increased to +42.'
           },
+          metrics: [
+            { label: 'Onboarding Completion', value: '96%' },
+            { label: 'Time to First Call', value: '8min' },
+            { label: 'Developer NPS', value: '+42' }
+          ]
         },
         {
-          slug: 'startup-mvp-confidential',
-          title: 'Startup MVP: From Zero to Launch',
-          summary: 'Took a B2B SaaS product from concept to launch in 12 weeks, acquiring first 100 paying customers.',
-          tags: ['Startups', 'Product', 'Growth'],
+          slug: 'mobile-app-growth-engine',
+          title: 'Mobile App Growth & Retention Engine',
+          summary: 'Built a data-driven growth engine that increased 30-day retention by 45% through personalized onboarding and gamification.',
+          tags: ['Growth', 'Mobile', 'Data'],
+          status: 'PUBLIC',
+          detail_level: 'FULL',
+          featured: true,
+          published: true,
+          sections_config: [
+            { id: 'overview', visible: true, order: 0 },
+            { id: 'problem', visible: true, order: 1 },
+            { id: 'impact', visible: true, order: 2 }
+          ],
+          content: {
+            overview: 'Designed a comprehensive growth system for a consumer mobile app with 500K+ downloads.',
+            problem: 'Strong acquisition (100K+ monthly downloads) but poor retention (15% after 30 days). Users churned before experiencing value.',
+            impact: '30-day retention increased to 22% (+45%). DAU grew 3x over 6 months. Referral rate increased by 60%.'
+          },
+          metrics: [
+            { label: '30-Day Retention', value: '+45%' },
+            { label: 'DAU Growth', value: '3x' },
+            { label: 'Referral Rate', value: '+60%' }
+          ]
+        },
+        {
+          slug: 'enterprise-saas-platform',
+          title: 'Enterprise SaaS Platform',
+          summary: 'Led product strategy for a B2B SaaS platform serving Fortune 500 companies. Drove 200% ARR growth.',
+          tags: ['Enterprise', 'B2B SaaS', 'Strategy'],
           status: 'CONFIDENTIAL',
           detail_level: 'SUMMARY',
           featured: false,
           published: true,
-          confidential_message: 'This project involves confidential startup information. Details have been intentionally limited.',
+          confidential_message: 'This project contains confidential business information. Details have been intentionally limited.',
           sections_config: [
-            { id: 'snapshot', visible: true, order: 0 },
+            { id: 'overview', visible: true, order: 0 }
           ],
           content: {
-            snapshot: {
-              problem: 'Market opportunity identified for B2B workflow automation',
-              role: 'Co-founder and Product Lead',
-              approach: 'Rapid MVP development with tight feedback loops',
-              outcome: '100 paying customers in first 3 months',
-            },
+            overview: 'Managed product roadmap for an enterprise workflow automation platform. Achieved SOC 2 Type II and HIPAA compliance.'
           },
+          metrics: [
+            { label: 'ARR Growth', value: '200%' },
+            { label: 'Fortune 500 Customers', value: '3' }
+          ]
         },
+        {
+          slug: 'fintech-payment-integration',
+          title: 'Fintech Payment Infrastructure',
+          summary: 'Architected payment processing infrastructure handling $50M+ monthly transactions.',
+          tags: ['Fintech', 'Payments', 'Infrastructure'],
+          status: 'CONFIDENTIAL',
+          detail_level: 'MINIMAL',
+          featured: false,
+          published: true,
+          confidential_message: 'Payment infrastructure details are confidential due to security and regulatory requirements.',
+          sections_config: [
+            { id: 'overview', visible: true, order: 0 }
+          ],
+          content: {
+            overview: 'Led the redesign of payment infrastructure for a high-growth fintech with smart retry logic and fraud detection.'
+          },
+          metrics: [
+            { label: 'Monthly Volume', value: '$50M+' },
+            { label: 'Failure Reduction', value: '-60%' }
+          ]
+        },
+        {
+          slug: 'ai-agent-framework',
+          title: 'AI Agent Orchestration Framework',
+          summary: 'Exploring a framework for orchestrating multiple AI agents to handle complex, multi-step tasks.',
+          tags: ['AI/LLM', 'Agents', 'Framework'],
+          status: 'CONCEPT',
+          detail_level: 'SUMMARY',
+          featured: false,
+          published: true,
+          sections_config: [
+            { id: 'overview', visible: true, order: 0 },
+            { id: 'approach', visible: true, order: 1 }
+          ],
+          content: {
+            overview: 'A conceptual exploration of how to build reliable AI agent systems with error handling and human-in-the-loop workflows.',
+            approach: 'Investigating hierarchical agents, peer-to-peer collaboration, and checkpoint patterns.'
+          }
+        }
       ];
 
       for (const project of projects) {
-        await (supabase as any)
+        const { error } = await (supabase as any)
           .from('projects')
           .upsert(project, { onConflict: 'slug' });
+        if (!error) counts.projects++;
+      }
+
+      // 6. Add sample analytics events
+      const sampleEvents = [
+        { sid: crypto.randomUUID(), event: 'page_view', path: '/' },
+        { sid: crypto.randomUUID(), event: 'page_view', path: '/projects' },
+        { sid: crypto.randomUUID(), event: 'project_view', path: '/projects/ai-recommendation-engine', ref: 'ai-recommendation-engine' },
+        { sid: crypto.randomUUID(), event: 'resume_download', path: '/resume' },
+        { sid: crypto.randomUUID(), event: 'contact_click', path: '/contact', ref: 'linkedin' }
+      ];
+
+      for (const evt of sampleEvents) {
+        const { error } = await (supabase as any)
+          .from('analytics_events')
+          .insert(evt);
+        if (!error) counts.events++;
       }
 
       clearCache();
-      toast.success('Demo content seeded successfully!');
+      toast.success(
+        `Demo seeded: ${counts.settings} settings, ${counts.categories} categories, ${counts.items} writing items, ${counts.projects} projects, ${counts.events} events`
+      );
       runChecks();
     } catch (err) {
       console.error('Seed error:', err);
