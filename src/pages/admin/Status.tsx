@@ -98,8 +98,8 @@ export default function AdminStatus() {
     // 7. Site Settings Row
     if (health.status === 'connected') {
       try {
-        const { data, error } = await supabase
-          .from('site_settings' as any)
+        const { data, error } = await (supabase as any)
+          .from('site_settings')
           .select('id, admin_user_id')
           .limit(1)
           .maybeSingle();

@@ -78,8 +78,8 @@ export default function AdminSetup() {
     // Check 4: Admin configured
     updateChecklistItem('admin', { status: 'checking' });
     try {
-      const { data: settings } = await supabase
-        .from('site_settings' as any)
+      const { data: settings } = await (supabase as any)
+        .from('site_settings')
         .select('admin_user_id, bootstrap_token_hash')
         .limit(1)
         .maybeSingle();

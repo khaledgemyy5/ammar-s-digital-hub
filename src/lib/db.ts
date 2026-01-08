@@ -87,8 +87,8 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('site_settings' as any)
+    const { data, error } = await (supabase as any)
+      .from('site_settings')
       .select('*')
       .limit(1)
       .maybeSingle();
@@ -117,8 +117,8 @@ export async function getPublicSiteSettings(): Promise<Omit<SiteSettings, 'admin
   }
 
   try {
-    const { data, error } = await supabase
-      .from('site_settings' as any)
+    const { data, error } = await (supabase as any)
+      .from('site_settings')
       .select('id, nav_config, home_sections, theme, seo, pages, created_at, updated_at')
       .limit(1)
       .maybeSingle();
@@ -160,8 +160,8 @@ export async function getPublishedProjects(): Promise<Project[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('projects' as any)
+    const { data, error } = await (supabase as any)
+      .from('projects')
       .select('*')
       .eq('published', true)
       .order('featured', { ascending: false })
@@ -184,8 +184,8 @@ export async function getFeaturedProjects(limit: number = 3): Promise<Project[]>
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('projects' as any)
+    const { data, error } = await (supabase as any)
+      .from('projects')
       .select('*')
       .eq('published', true)
       .eq('featured', true)
@@ -209,8 +209,8 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
   if (!isSupabaseConfigured()) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('projects' as any)
+    const { data, error } = await (supabase as any)
+      .from('projects')
       .select('*')
       .eq('slug', slug)
       .eq('published', true)
@@ -229,8 +229,8 @@ export async function getAllProjects(): Promise<Project[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('projects' as any)
+    const { data, error } = await (supabase as any)
+      .from('projects')
       .select('*')
       .order('featured', { ascending: false })
       .order('created_at', { ascending: false });
@@ -284,8 +284,8 @@ export async function deleteProject(id: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
   try {
-    const { error } = await supabase
-      .from('projects' as any)
+    const { error } = await (supabase as any)
+      .from('projects')
       .delete()
       .eq('id', id);
 
@@ -308,8 +308,8 @@ export async function getWritingCategories(): Promise<WritingCategory[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('writing_categories' as any)
+    const { data, error } = await (supabase as any)
+      .from('writing_categories')
       .select('*')
       .eq('enabled', true)
       .order('order_index', { ascending: true });
@@ -331,8 +331,8 @@ export async function getWritingItems(): Promise<WritingItem[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('writing_items' as any)
+    const { data, error } = await (supabase as any)
+      .from('writing_items')
       .select('*')
       .eq('enabled', true)
       .order('featured', { ascending: false })
@@ -355,8 +355,8 @@ export async function getFeaturedWriting(limit: number = 3): Promise<WritingItem
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('writing_items' as any)
+    const { data, error } = await (supabase as any)
+      .from('writing_items')
       .select('*')
       .eq('enabled', true)
       .eq('featured', true)
@@ -376,8 +376,8 @@ export async function getAllWritingCategories(): Promise<WritingCategory[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('writing_categories' as any)
+    const { data, error } = await (supabase as any)
+      .from('writing_categories')
       .select('*')
       .order('order_index', { ascending: true });
 
@@ -393,8 +393,8 @@ export async function getAllWritingItems(): Promise<WritingItem[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('writing_items' as any)
+    const { data, error } = await (supabase as any)
+      .from('writing_items')
       .select('*')
       .order('order_index', { ascending: true });
 
@@ -412,8 +412,8 @@ export async function adminGetSiteSettings(): Promise<SiteSettings | null> {
   if (!isSupabaseConfigured()) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('site_settings' as any)
+    const { data, error } = await (supabase as any)
+      .from('site_settings')
       .select('*')
       .limit(1)
       .maybeSingle();

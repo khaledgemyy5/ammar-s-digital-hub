@@ -1,34 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    '⚠️ Supabase environment variables not configured. ' +
-    'Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file. ' +
-    'Visit /admin/setup for configuration instructions.'
-  );
-}
-
-// Create client with fallbacks for development
-export const supabase = createClient<Database>(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+// Re-export the supabase client from integrations
+export { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 // Helper to check if Supabase is properly configured
 export const isSupabaseConfigured = (): boolean => {
-  return Boolean(supabaseUrl && supabaseAnonKey);
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  return Boolean(url && key);
 };
 
 // Helper to get current user
