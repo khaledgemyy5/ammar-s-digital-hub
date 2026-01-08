@@ -32,7 +32,7 @@ function getSessionId(): string {
   return sid;
 }
 
-// Track event with minimal blocking
+// Track event with minimal blocking using Supabase client
 export function trackEvent(
   event: AnalyticsEventType,
   options: TrackEventOptions = {}
@@ -46,22 +46,14 @@ export function trackEvent(
     sid: getSessionId(),
   };
 
-  // Use fetch with keepalive for non-blocking tracking
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/analytics_events`;
-  const headers = {
-    'Content-Type': 'application/json',
-    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-  };
-
-  fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(eventData),
-    keepalive: true,
-  }).catch(() => {
-    // Silently fail - analytics should not break the app
-  });
+  // Use Supabase client for non-blocking insert
+  (async () => {
+    try {
+      await supabase.from('analytics_events').insert(eventData);
+    } catch {
+      // Silently fail - analytics should not break the app
+    }
+  })();
 }
 
 // Convenience functions
