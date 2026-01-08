@@ -78,8 +78,8 @@ export default function ProjectEditor() {
   const loadProject = async (projectId: string) => {
     try {
       // Fetch by ID directly for admin
-      const { data, error } = await supabase
-        .from('projects' as any)
+      const { data, error } = await (supabase as any)
+        .from('projects')
         .select('*')
         .eq('id', projectId)
         .maybeSingle();
