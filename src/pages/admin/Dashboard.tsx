@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Users, Eye, Download, MousePointerClick, 
-  FolderKanban, PenLine, TrendingUp
+  FolderKanban, PenLine, TrendingUp, ArrowRight, 
+  Home, Palette, Settings
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,17 +70,25 @@ export default function AdminDashboard() {
     },
   ];
 
+  const quickActions = [
+    { label: 'Home Layout', path: '/admin/home-layout', icon: Home },
+    { label: 'Projects', path: '/admin/projects', icon: FolderKanban },
+    { label: 'Writing', path: '/admin/writing', icon: PenLine },
+    { label: 'Theme', path: '/admin/theme', icon: Palette },
+    { label: 'Settings', path: '/admin/settings', icon: Settings },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-1">Overview</h1>
         <p className="text-muted-foreground">
-          Overview of your site's performance (last 30 days)
+          Last 30 days performance
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -86,20 +96,20 @@ export default function AdminDashboard() {
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.05 }}
             >
               <Card>
-                <CardContent className="pt-6">
+                <CardContent className="pt-5 pb-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                      <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
                       {loading ? (
-                        <Skeleton className="h-8 w-16 mt-1" />
+                        <Skeleton className="h-7 w-12" />
                       ) : (
-                        <p className="text-2xl font-bold">{stat.value}</p>
+                        <p className="text-2xl font-bold">{stat.value.toLocaleString()}</p>
                       )}
                     </div>
-                    <Icon className={`w-8 h-8 ${stat.color}`} />
+                    <Icon className={`w-6 h-6 ${stat.color}`} />
                   </div>
                 </CardContent>
               </Card>
@@ -108,73 +118,84 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Content Overview */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Content Overview</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium">Content</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+          <CardContent className="space-y-3">
+            <Link 
+              to="/admin/projects"
+              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+            >
               <div className="flex items-center gap-3">
-                <FolderKanban className="w-5 h-5 text-primary" />
-                <span>Published Projects</span>
+                <FolderKanban className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Published Projects</span>
               </div>
-              {loading ? (
-                <Skeleton className="h-6 w-8" />
-              ) : (
-                <span className="font-bold">{projectCount}</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                {loading ? (
+                  <Skeleton className="h-5 w-6" />
+                ) : (
+                  <span className="font-semibold">{projectCount}</span>
+                )}
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Link>
+            <Link 
+              to="/admin/writing"
+              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+            >
               <div className="flex items-center gap-3">
-                <PenLine className="w-5 h-5 text-primary" />
-                <span>Writing Items</span>
+                <PenLine className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Writing Items</span>
               </div>
-              {loading ? (
-                <Skeleton className="h-6 w-8" />
-              ) : (
-                <span className="font-bold">{writingCount}</span>
-              )}
-            </div>
+              <div className="flex items-center gap-2">
+                {loading ? (
+                  <Skeleton className="h-5 w-6" />
+                ) : (
+                  <span className="font-semibold">{writingCount}</span>
+                )}
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Link>
           </CardContent>
         </Card>
 
         {/* Top Projects */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
               Top Projects
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
             ) : analytics?.topProjects && analytics.topProjects.length > 0 ? (
               <div className="space-y-2">
-                {analytics.topProjects.map((project, index) => (
+                {analytics.topProjects.slice(0, 5).map((project, index) => (
                   <div 
                     key={project.slug}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">#{index + 1}</span>
-                      <span className="font-medium truncate">{project.slug}</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs text-muted-foreground w-5">#{index + 1}</span>
+                      <span className="text-sm font-medium truncate">{project.slug}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">{project.views} views</span>
+                    <span className="text-xs text-muted-foreground">{project.views} views</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4">
-                No project views yet
-              </p>
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">No project views yet</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -182,19 +203,23 @@ export default function AdminDashboard() {
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button asChild>
-            <a href="/admin/projects">Manage Projects</a>
-          </Button>
-          <Button variant="outline" asChild>
-            <a href="/admin/writing">Manage Writing</a>
-          </Button>
-          <Button variant="outline" asChild>
-            <a href="/admin/settings">Site Settings</a>
-          </Button>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Button key={action.path} variant="outline" size="sm" asChild>
+                  <Link to={action.path}>
+                    <Icon className="w-4 h-4 mr-2" />
+                    {action.label}
+                  </Link>
+                </Button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
     </div>
