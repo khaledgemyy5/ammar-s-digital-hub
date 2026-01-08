@@ -7,18 +7,19 @@ import { WritingPreview } from '@/components/sections/WritingPreview';
 import { ContactCTA } from '@/components/sections/ContactCTA';
 import { trackPageView } from '@/lib/analytics';
 import { getFeaturedProjects, getFeaturedWriting, getPublicSiteSettings } from '@/lib/db';
-import type { Project, WritingItem, HomeSection } from '@/types/database';
+import type { Project, WritingItem, HomeSection, SiteSettings } from '@/types/database';
 
 const Index = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [writing, setWriting] = useState<WritingItem[]>([]);
   const [sections, setSections] = useState<HomeSection[]>([]);
+  const [settings, setSettings] = useState<Partial<SiteSettings> | null>(null);
 
   useEffect(() => {
     trackPageView('/');
     
     async function loadData() {
-      const [projectsData, writingData, settings] = await Promise.all([
+      const [projectsData, writingData, siteSettings] = await Promise.all([
         getFeaturedProjects(3),
         getFeaturedWriting(3),
         getPublicSiteSettings()
@@ -26,8 +27,11 @@ const Index = () => {
       
       setProjects(projectsData);
       setWriting(writingData);
-      if (settings?.home_sections) {
-        setSections(settings.home_sections as HomeSection[]);
+      if (siteSettings) {
+        setSettings(siteSettings);
+        if (siteSettings.home_sections) {
+          setSections(siteSettings.home_sections as HomeSection[]);
+        }
       }
     }
     
@@ -39,6 +43,12 @@ const Index = () => {
     if (sections.length === 0) return true; // Show all by default
     const section = sections.find(s => s.id === id);
     return section?.visible ?? true;
+  };
+
+  // Get section title override
+  const getSectionTitle = (id: string, defaultTitle: string) => {
+    const section = sections.find(s => s.id === id);
+    return section?.titleOverride || defaultTitle;
   };
 
   // Sort sections by order
@@ -60,15 +70,24 @@ const Index = () => {
       case 'hero':
         return <HeroSection key={id} />;
       case 'experience_snapshot':
-        return <ExperienceSnapshot key={id} />;
+        return <ExperienceSnapshot key={id} title={getSectionTitle(id, 'Experience Snapshot')} />;
       case 'featured_projects':
-        return <FeaturedProjects key={id} projects={projects} />;
+        return <FeaturedProjects key={id} projects={projects} title={getSectionTitle(id, 'Featured Projects')} />;
       case 'how_i_work':
-        return <HowIWork key={id} />;
+        return <HowIWork key={id} title={getSectionTitle(id, 'How I Work')} />;
       case 'selected_writing_preview':
-        return <WritingPreview key={id} items={writing} />;
+        return writing.length > 0 ? (
+          <WritingPreview key={id} items={writing} title={getSectionTitle(id, 'Selected Writing')} />
+        ) : null;
       case 'contact_cta':
-        return <ContactCTA key={id} />;
+        return (
+          <ContactCTA 
+            key={id} 
+            email={settings?.pages?.contact?.email}
+            linkedin={settings?.pages?.contact?.linkedin}
+            calendar={settings?.pages?.contact?.calendar}
+          />
+        );
       default:
         return null;
     }

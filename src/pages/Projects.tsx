@@ -10,7 +10,7 @@ import { getPublishedProjects } from '@/lib/db';
 import { trackPageView } from '@/lib/analytics';
 import type { Project } from '@/types/database';
 
-const ALL_TAGS = ['All', 'AI/LLM', 'Product', 'Startups', 'Engineering'];
+// Dynamic tags will be extracted from projects
 
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -24,6 +24,13 @@ export default function Projects() {
       .then(setProjects)
       .finally(() => setLoading(false));
   }, []);
+
+  // Extract unique tags from projects
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    projects.forEach(p => p.tags?.forEach(tag => tagSet.add(tag)));
+    return ['All', ...Array.from(tagSet).sort()];
+  }, [projects]);
 
   const filteredProjects = useMemo(() => {
     if (activeFilter === 'All') return projects;
@@ -88,7 +95,7 @@ export default function Projects() {
           transition={{ delay: 0.1 }}
           className="flex flex-wrap gap-2 mb-10"
         >
-          {ALL_TAGS.map((tag) => (
+          {allTags.map((tag) => (
             <Button
               key={tag}
               variant={activeFilter === tag ? 'default' : 'outline'}

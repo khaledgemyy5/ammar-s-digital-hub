@@ -43,7 +43,8 @@ export default function Writing() {
     trackWritingClick(url);
   };
 
-  const getCategoryName = (categoryId: string) => {
+  const getCategoryName = (categoryId: string | null | undefined) => {
+    if (!categoryId) return 'Uncategorized';
     const cat = categories.find(c => c.id === categoryId);
     return cat?.name || 'Uncategorized';
   };
