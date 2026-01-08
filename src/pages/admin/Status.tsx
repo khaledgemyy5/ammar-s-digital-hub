@@ -161,8 +161,8 @@ export default function AdminStatus() {
       ];
 
       for (const cat of categories) {
-        await supabase
-          .from('writing_categories' as any)
+        await (supabase as any)
+          .from('writing_categories')
           .upsert(cat, { onConflict: 'slug' });
       }
 
@@ -212,8 +212,8 @@ export default function AdminStatus() {
 
       for (const item of writingItems) {
         if (item.category_id) {
-          await supabase
-            .from('writing_items' as any)
+          await (supabase as any)
+            .from('writing_items')
             .upsert(item, { onConflict: 'url' });
         }
       }
@@ -294,8 +294,8 @@ export default function AdminStatus() {
       ];
 
       for (const project of projects) {
-        await supabase
-          .from('projects' as any)
+        await (supabase as any)
+          .from('projects')
           .upsert(project, { onConflict: 'slug' });
       }
 
