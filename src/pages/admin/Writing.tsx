@@ -36,9 +36,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { getAllWritingCategories, getAllWritingItems, clearCache } from '@/lib/db';
 import type { WritingCategory, WritingItem, Language } from '@/types/database';
 
+// Type fix for nullable category_id from database
+type WritingItemFromDB = Omit<WritingItem, 'category_id'> & { category_id: string | null };
+
 export default function AdminWriting() {
   const [categories, setCategories] = useState<WritingCategory[]>([]);
-  const [items, setItems] = useState<WritingItem[]>([]);
+  const [items, setItems] = useState<WritingItemFromDB[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -182,13 +185,13 @@ export default function AdminWriting() {
     });
   };
 
-  const openEditItem = (item: WritingItem) => {
-    setEditingItem(item);
+  const openEditItem = (item: WritingItemFromDB) => {
+    setEditingItem(item as any);
     setItemForm({
       title: item.title,
       url: item.url,
       platform_label: item.platform_label || '',
-      category_id: item.category_id,
+      category_id: item.category_id || '',
       language: item.language,
       featured: item.featured,
       enabled: item.enabled,
@@ -243,7 +246,7 @@ export default function AdminWriting() {
     }
   };
 
-  const toggleItemEnabled = async (item: WritingItem) => {
+  const toggleItemEnabled = async (item: WritingItemFromDB) => {
     const { error } = await (supabase as any)
       .from('writing_items')
       .update({ enabled: !item.enabled })
@@ -255,7 +258,7 @@ export default function AdminWriting() {
     }
   };
 
-  const toggleItemFeatured = async (item: WritingItem) => {
+  const toggleItemFeatured = async (item: WritingItemFromDB) => {
     const { error } = await (supabase as any)
       .from('writing_items')
       .update({ featured: !item.featured })
@@ -289,7 +292,8 @@ export default function AdminWriting() {
     item.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getCategoryName = (id: string) => {
+  const getCategoryName = (id: string | null) => {
+    if (!id) return 'Uncategorized';
     return categories.find(c => c.id === id)?.name || 'Unknown';
   };
 

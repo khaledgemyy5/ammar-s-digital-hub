@@ -448,6 +448,122 @@ export async function adminUpdateSiteSettings(updates: Partial<SiteSettings>): P
   }
 }
 
+// ============ Admin Writing ============
+
+export async function createWritingCategory(
+  category: Omit<WritingCategory, 'id' | 'created_at' | 'updated_at'>
+): Promise<WritingCategory | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const { data, error } = await (supabase as any)
+      .from('writing_categories')
+      .insert(category)
+      .select()
+      .single();
+
+    if (error) throw error;
+    clearCache();
+    return data as WritingCategory;
+  } catch (error) {
+    console.error('Error creating category:', error);
+    return null;
+  }
+}
+
+export async function updateWritingCategory(id: string, updates: Partial<WritingCategory>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const { error } = await (supabase as any)
+      .from('writing_categories')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+    clearCache();
+    return true;
+  } catch (error) {
+    console.error('Error updating category:', error);
+    return false;
+  }
+}
+
+export async function deleteWritingCategory(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const { error } = await (supabase as any)
+      .from('writing_categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    clearCache();
+    return true;
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    return false;
+  }
+}
+
+export async function createWritingItem(
+  item: Omit<WritingItem, 'id' | 'created_at' | 'updated_at'>
+): Promise<WritingItem | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const { data, error } = await (supabase as any)
+      .from('writing_items')
+      .insert(item)
+      .select()
+      .single();
+
+    if (error) throw error;
+    clearCache();
+    return data as WritingItem;
+  } catch (error) {
+    console.error('Error creating item:', error);
+    return null;
+  }
+}
+
+export async function updateWritingItem(id: string, updates: Partial<WritingItem>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const { error } = await (supabase as any)
+      .from('writing_items')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+    clearCache();
+    return true;
+  } catch (error) {
+    console.error('Error updating item:', error);
+    return false;
+  }
+}
+
+export async function deleteWritingItem(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const { error } = await (supabase as any)
+      .from('writing_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    clearCache();
+    return true;
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    return false;
+  }
+}
+
 // ============ Bootstrap ============
 
 export async function bootstrapSetAdmin(token: string): Promise<boolean> {
