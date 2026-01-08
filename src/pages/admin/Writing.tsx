@@ -107,8 +107,8 @@ export default function AdminWriting() {
     setSaving(true);
     try {
       if (editingCategory?.id === 'new') {
-        const { error } = await supabase
-          .from('writing_categories' as any)
+        const { error } = await (supabase as any)
+          .from('writing_categories')
           .insert({
             name: categoryName,
             slug: categorySlug,
@@ -118,8 +118,8 @@ export default function AdminWriting() {
         if (error) throw error;
         toast.success('Category created');
       } else {
-        const { error } = await supabase
-          .from('writing_categories' as any)
+        const { error } = await (supabase as any)
+          .from('writing_categories')
           .update({ name: categoryName, slug: categorySlug })
           .eq('id', editingCategory!.id);
         if (error) throw error;
@@ -136,8 +136,8 @@ export default function AdminWriting() {
   };
 
   const toggleCategoryEnabled = async (cat: WritingCategory) => {
-    const { error } = await supabase
-      .from('writing_categories' as any)
+    const { error } = await (supabase as any)
+      .from('writing_categories')
       .update({ enabled: !cat.enabled })
       .eq('id', cat.id);
     
@@ -220,14 +220,14 @@ export default function AdminWriting() {
       };
 
       if (editingItem?.id === 'new') {
-        const { error } = await supabase
-          .from('writing_items' as any)
+        const { error } = await (supabase as any)
+          .from('writing_items')
           .insert(data);
         if (error) throw error;
         toast.success('Item created');
       } else {
-        const { error } = await supabase
-          .from('writing_items' as any)
+        const { error } = await (supabase as any)
+          .from('writing_items')
           .update(data)
           .eq('id', editingItem!.id);
         if (error) throw error;
@@ -244,8 +244,8 @@ export default function AdminWriting() {
   };
 
   const toggleItemEnabled = async (item: WritingItem) => {
-    const { error } = await supabase
-      .from('writing_items' as any)
+    const { error } = await (supabase as any)
+      .from('writing_items')
       .update({ enabled: !item.enabled })
       .eq('id', item.id);
     
@@ -256,8 +256,8 @@ export default function AdminWriting() {
   };
 
   const toggleItemFeatured = async (item: WritingItem) => {
-    const { error } = await supabase
-      .from('writing_items' as any)
+    const { error } = await (supabase as any)
+      .from('writing_items')
       .update({ featured: !item.featured })
       .eq('id', item.id);
     

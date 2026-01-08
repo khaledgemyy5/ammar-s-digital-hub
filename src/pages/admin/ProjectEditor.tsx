@@ -66,7 +66,7 @@ export default function ProjectEditor() {
   const [sections, setSections] = useState<ProjectSection[]>(defaultSections);
   const [content, setContent] = useState<ProjectContent>({});
   const [mediaItems, setMediaItems] = useState<Array<{ type: 'image' | 'video'; url: string; caption?: string }>>([]);
-  const [evidenceLinks, setEvidenceLinks] = useState<Array<{ label: string; url: string; type: string }>>([]);
+  const [evidenceLinks, setEvidenceLinks] = useState<Array<{ label: string; url: string; type: 'prd' | 'spec' | 'roadmap' | 'demo' | 'github' | 'other' }>>([]);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -531,7 +531,7 @@ export default function ProjectEditor() {
                     />
                     <Select
                       value={link.type}
-                      onValueChange={(v) => updateEvidenceLink(index, { type: v })}
+                      onValueChange={(v) => updateEvidenceLink(index, { type: v as 'prd' | 'spec' | 'roadmap' | 'demo' | 'github' | 'other' })}
                     >
                       <SelectTrigger className="w-28">
                         <SelectValue />
@@ -549,7 +549,7 @@ export default function ProjectEditor() {
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
-                )))}
+                ))}
                 <Button variant="outline" onClick={addEvidenceLink}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Link
@@ -589,7 +589,7 @@ export default function ProjectEditor() {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                )))}
+                ))}
               </div>
               
               {mediaItems.length < 3 && (
