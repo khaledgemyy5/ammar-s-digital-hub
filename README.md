@@ -1,86 +1,166 @@
-# Welcome to your Lovable project
+# Ammar Jaber - Personal Brand Hub
 
-## Project info
+A minimalist, text-first personal portfolio website built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Public Site**: Home, Projects, Writing, Resume, Contact pages
+- **Admin Dashboard**: Full CMS for managing all content
+- **Dynamic Navigation**: Auto-hides empty pages
+- **RTL Support**: Arabic content support with proper text direction
+- **Analytics**: Track page views, downloads, and clicks
+- **SEO**: Configurable meta tags and OG images
 
-There are several ways of editing your application.
+## Quick Start
 
-**Use Lovable**
+### 1. Set Environment Variables
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+In Lovable, go to **Settings > Secrets** and add:
 
-Changes made via Lovable will be committed automatically to this repo.
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | Your Supabase project URL (e.g., `https://xxx.supabase.co`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/public key |
 
-**Use your preferred IDE**
+**Where to find these:**
+1. Go to [supabase.com](https://supabase.com) and open your project
+2. Navigate to **Settings > API**
+3. Copy the "Project URL" and "anon public" key
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 2. Initialize Database Schema
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Open your Supabase project
+2. Go to **SQL Editor**
+3. Copy and paste the contents of `docs/sql/000_all.sql`
+4. Click **Run** to execute
 
-Follow these steps:
+This creates all tables, functions, triggers, and initial seed data.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 3. Create Admin User
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. In Supabase, go to **Authentication > Users**
+2. Click **Add User > Create New User**
+3. Enter your email and a strong password
+4. Click **Create User**
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 4. Set Bootstrap Token
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Go to **SQL Editor** in Supabase
+2. Run this command (replace `your-secret-token` with a secure token):
+   ```sql
+   SELECT public.set_bootstrap_token('your-secret-token');
+   ```
+3. Save this token - you'll need it in the next step
+
+### 5. Claim Admin Access
+
+1. Visit your app at `/admin/login`
+2. Log in with your email/password from step 3
+3. You'll be redirected to `/admin/setup`
+4. Enter your bootstrap token from step 4
+5. Click **Claim Admin**
+
+### 6. Seed Demo Content (Optional)
+
+1. Go to `/admin/status`
+2. Click **Seed Demo Content**
+3. This adds sample projects, writing items, and settings
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── admin/        # Admin-specific components
+│   ├── layout/       # Navbar, Footer, MainLayout
+│   ├── sections/     # Home page sections
+│   └── ui/           # shadcn/ui components
+├── hooks/            # Custom React hooks
+├── lib/              # Utilities (db, analytics, supabase)
+├── pages/
+│   ├── admin/        # Admin dashboard pages
+│   └── *.tsx         # Public pages
+└── types/            # TypeScript types
 ```
 
-**Edit a file directly in GitHub**
+## Admin Dashboard Pages
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Page | Description |
+|------|-------------|
+| `/admin/dashboard` | Overview with stats and quick actions |
+| `/admin/home-layout` | Reorder and toggle home sections |
+| `/admin/projects` | Manage projects (CRUD, publish, feature) |
+| `/admin/writing` | Manage writing categories and items |
+| `/admin/pages` | Enable/disable Resume and Contact pages |
+| `/admin/theme` | Accent color, font, and mode settings |
+| `/admin/seo` | Site title, description, OG image |
+| `/admin/analytics` | View site analytics |
+| `/admin/settings` | Navigation links configuration |
+| `/admin/status` | Connection tests and seed demo data |
 
-**Use GitHub Codespaces**
+## Technology Stack
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Auth, RLS)
+- **Animation**: Framer Motion
+- **State**: React Query, Context API
 
-## What technologies are used for this project?
+## Design Principles
 
-This project is built with:
+- **Minimalist**: Text-first, no unnecessary images
+- **Professional**: IBM Plex Serif + Inter fonts
+- **Fast**: Caching, lazy loading, skeleton states
+- **Accessible**: Semantic HTML, keyboard navigation
+- **Secure**: RLS policies, input validation
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Security
 
-## How can I deploy this project?
+- Row Level Security (RLS) on all tables
+- Single admin user via bootstrap token
+- No sensitive data in client code
+- Input sanitization on all forms
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Customization
 
-## Verify Supabase Connection
+### Accent Color
+Default: `#135BEC` (Bold Blue)
 
-1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Copy your project URL and anon key
-3. Set environment variables:
-   - `VITE_SUPABASE_URL` - Your Supabase project URL
-   - `VITE_SUPABASE_ANON_KEY` - Your Supabase anon/public key
-4. Run `docs/sql/000_all.sql` in your Supabase SQL Editor to initialize the schema
-5. Visit the app - it will show connection status:
-   - **Green**: Connected successfully
-   - **Orange**: Schema not initialized (run the SQL script)
-   - **Red**: Configuration error (check env vars)
+Change in Admin > Theme or directly in `src/index.css`:
+```css
+--primary: 220 88% 50%;
+```
 
-## Can I connect a custom domain to my Lovable project?
+### Fonts
+Options: Inter, IBM Plex Serif, System
 
-Yes, you can!
+Change in Admin > Theme.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Deployment
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. In Lovable, click **Share > Publish**
+2. Your site will be live at the provided URL
+3. Optional: Connect a custom domain in **Settings > Domains**
+
+## Troubleshooting
+
+### "Supabase Not Configured" Error
+- Check that environment variables are set correctly
+- Ensure no typos in the URL or key
+
+### "Schema Not Initialized" Warning
+- Run `docs/sql/000_all.sql` in Supabase SQL Editor
+- Make sure the script completed without errors
+
+### "Access Forbidden" on Admin
+- You're logged in but not the admin user
+- Run `SELECT admin_user_id FROM site_settings;` to check
+- If null, you need to bootstrap with token
+
+### Projects/Writing Not Showing
+- Check if items are marked as `published: true` / `enabled: true`
+- Run seed demo data from `/admin/status`
+
+## License
+
+MIT
