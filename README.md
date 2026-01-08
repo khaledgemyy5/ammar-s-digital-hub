@@ -64,6 +64,19 @@ This project is built with:
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
+## Verify Supabase Connection
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Copy your project URL and anon key
+3. Set environment variables:
+   - `VITE_SUPABASE_URL` - Your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY` - Your Supabase anon/public key
+4. Run `docs/sql/000_all.sql` in your Supabase SQL Editor to initialize the schema
+5. Visit the app - it will show connection status:
+   - **Green**: Connected successfully
+   - **Orange**: Schema not initialized (run the SQL script)
+   - **Red**: Configuration error (check env vars)
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!
