@@ -25,6 +25,10 @@ import ProjectEditor from "./pages/admin/ProjectEditor";
 import AdminWriting from "./pages/admin/Writing";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminStatus from "./pages/admin/Status";
+import AdminHomeLayout from "./pages/admin/HomeLayout";
+import AdminPages from "./pages/admin/Pages";
+import AdminTheme from "./pages/admin/Theme";
+import AdminSEO from "./pages/admin/SEO";
 
 const queryClient = new QueryClient();
 
@@ -52,11 +56,15 @@ const App = () => (
           <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="home-layout" element={<AdminHomeLayout />} />
             <Route path="projects" element={<AdminProjects />} />
             <Route path="projects/:id" element={<ProjectEditor />} />
             <Route path="writing" element={<AdminWriting />} />
+            <Route path="pages" element={<AdminPages />} />
+            <Route path="theme" element={<AdminTheme />} />
+            <Route path="seo" element={<AdminSEO />} />
             <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="settings" element={<AdminSettings />} />
             <Route path="status" element={<AdminStatus />} />
           </Route>
 

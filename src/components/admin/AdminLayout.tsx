@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Settings, FolderKanban, PenLine, 
-  BarChart3, LogOut, Menu, X, ExternalLink, Activity
+  BarChart3, LogOut, Menu, X, ExternalLink, Activity,
+  Home, Palette, Search, FileText, Rocket
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { AdminGuard } from './AdminGuard';
 
 const navItems = [
-  { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Settings', path: '/admin/settings', icon: Settings },
+  { label: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Home Layout', path: '/admin/home-layout', icon: Home },
   { label: 'Projects', path: '/admin/projects', icon: FolderKanban },
   { label: 'Writing', path: '/admin/writing', icon: PenLine },
+  { label: 'Pages', path: '/admin/pages', icon: FileText },
+  { label: 'Theme', path: '/admin/theme', icon: Palette },
+  { label: 'SEO', path: '/admin/seo', icon: Search },
   { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-  { label: 'System Status', path: '/admin/status', icon: Activity },
+  { label: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
 export function AdminLayout() {
@@ -35,40 +39,45 @@ export function AdminLayout() {
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-muted/30">
-        {/* Mobile Header */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-border z-50 flex items-center justify-between px-4">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-muted rounded-lg"
-          >
-            {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-          <span className="font-heading font-semibold">Admin</span>
-          <Button variant="ghost" size="icon" asChild>
-            <a href="/" target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-5 h-5" />
-            </a>
-          </Button>
+      <div className="min-h-screen bg-background">
+        {/* Top Bar */}
+        <header className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border z-50 flex items-center justify-between px-4 lg:px-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 hover:bg-muted rounded-lg"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <Link to="/admin/dashboard" className="font-heading text-lg font-semibold">
+              Admin
+            </Link>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild className="gap-2">
+              <a href="/" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4" />
+                <span className="hidden sm:inline">Preview</span>
+              </a>
+            </Button>
+            <Button size="sm" className="gap-2">
+              <Rocket className="w-4 h-4" />
+              <span className="hidden sm:inline">Publish</span>
+            </Button>
+          </div>
         </header>
 
         {/* Sidebar */}
         <aside className={`
-          fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-40
+          fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-60 bg-background border-r border-border z-40
           transform transition-transform duration-200 ease-in-out
           lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="flex flex-col h-full">
-            {/* Logo */}
-            <div className="h-16 flex items-center px-6 border-b border-border">
-              <Link to="/admin/dashboard" className="font-heading text-xl font-semibold">
-                Admin Panel
-              </Link>
-            </div>
-
             {/* Navigation */}
-            <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+            <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -78,15 +87,15 @@ export function AdminLayout() {
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                      flex items-center gap-3 px-3 py-2 rounded-lg text-sm
                       transition-colors
                       ${isActive 
-                        ? 'bg-primary text-primary-foreground' 
+                        ? 'bg-accent text-accent-foreground font-medium' 
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       }
                     `}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-4 h-4" />
                     {item.label}
                   </Link>
                 );
@@ -94,25 +103,19 @@ export function AdminLayout() {
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border space-y-3">
-              <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                <a href="/" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4" />
-                  Preview Site
-                </a>
-              </Button>
-              
-              <div className="px-3 py-2 text-xs text-muted-foreground truncate">
+            <div className="p-3 border-t border-border space-y-2">
+              <div className="px-3 py-1.5 text-xs text-muted-foreground truncate">
                 {user?.email}
               </div>
               
               <Button 
                 variant="ghost" 
-                className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+                size="sm"
+                className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
                 onClick={handleSignOut}
               >
                 <LogOut className="w-4 h-4" />
-                Sign Out
+                Log out
               </Button>
             </div>
           </div>
@@ -127,8 +130,8 @@ export function AdminLayout() {
         )}
 
         {/* Main Content */}
-        <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
-          <div className="p-6 lg:p-8">
+        <main className="lg:ml-60 pt-14 min-h-screen">
+          <div className="p-6 lg:p-8 max-w-6xl">
             <Outlet />
           </div>
         </main>
