@@ -9,12 +9,15 @@ import { trackPageView } from '@/lib/analytics';
 import { getFeaturedProjects, getFeaturedWriting, getPublicSiteSettings } from '@/lib/db';
 import type { 
   Project, WritingItem, HomeSection, SiteSettings,
-  HeroConfig, ExperienceSnapshotConfig, 
-  FeaturedProjectsConfig, WritingPreviewConfig, ContactCTAConfig 
+  HeroConfig, FeaturedProjectsConfig, WritingPreviewConfig, ContactCTAConfig 
 } from '@/types/database';
 import { ContactConfig, migrateToContactConfig, defaultContactConfig } from '@/types/contact';
 import { HowIWorkFullConfig, migrateToHowIWorkConfig } from '@/types/howIWork';
-
+import { 
+  ExperienceSnapshotFullConfig, 
+  migrateToExperienceSnapshotFullConfig,
+  defaultExperienceSnapshotConfig 
+} from '@/types/experienceSnapshot';
 const defaultSections: HomeSection[] = [
   { id: 'hero', visible: true, order: 0 },
   { id: 'experience_snapshot', visible: true, order: 1, limit: 3 },
@@ -31,6 +34,7 @@ const Index = () => {
   const [settings, setSettings] = useState<Partial<SiteSettings> | null>(null);
   const [contactConfig, setContactConfig] = useState<ContactConfig>(defaultContactConfig);
   const [howIWorkConfig, setHowIWorkConfig] = useState<HowIWorkFullConfig | null>(null);
+  const [experienceConfig, setExperienceConfig] = useState<ExperienceSnapshotFullConfig>(defaultExperienceSnapshotConfig);
 
   useEffect(() => {
     trackPageView('/');
@@ -63,6 +67,17 @@ const Index = () => {
         // Load how I work config
         if (siteSettings?.pages?.howIWork) {
           setHowIWorkConfig(migrateToHowIWorkConfig(siteSettings.pages.howIWork));
+        }
+        
+        // Load experience snapshot config
+        if (siteSettings?.pages?.experienceSnapshot) {
+          setExperienceConfig(migrateToExperienceSnapshotFullConfig(siteSettings.pages.experienceSnapshot));
+        } else {
+          // Try to get from section config
+          const expSection = (siteSettings.home_sections as HomeSection[])?.find(s => s.id === 'experience_snapshot');
+          if (expSection?.config) {
+            setExperienceConfig(migrateToExperienceSnapshotFullConfig(expSection.config));
+          }
         }
       }
     }
@@ -111,13 +126,10 @@ const Index = () => {
         );
       
       case 'experience_snapshot': {
-        const config = getSectionConfig<ExperienceSnapshotConfig>(id);
         return (
           <ExperienceSnapshot 
             key={id} 
-            title={getSectionTitle(id, 'Experience Snapshot')}
-            config={config}
-            limit={getSectionLimit(id, 3)}
+            config={experienceConfig}
           />
         );
       }

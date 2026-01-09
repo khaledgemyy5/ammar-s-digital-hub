@@ -166,6 +166,21 @@ export interface PageConfig {
     titleOverride?: string;
     items?: any[];
   };
+  experienceSnapshot?: {
+    enabled: boolean;
+    showTitle: boolean;
+    title: string;
+    cta: {
+      enabled: boolean;
+      label: string;
+      href: string;
+    };
+    timelineStyle: {
+      showTimelineLine: boolean;
+      showDots: boolean;
+    };
+    items: any[];
+  };
 }
 
 // Site settings (singleton)
