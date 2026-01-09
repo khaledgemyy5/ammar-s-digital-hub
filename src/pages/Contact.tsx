@@ -1,41 +1,44 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Linkedin, Calendar, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SupabaseStatus } from '@/components/ui/SupabaseStatus';
 import { getPublicSiteSettings } from '@/lib/db';
 import { trackPageView, trackContactClick } from '@/lib/analytics';
-import { DynamicButton } from '@/components/ui/DynamicButton';
-import type { ButtonConfig } from '@/types/database';
+import { 
+  ContactConfig, 
+  defaultContactConfig, 
+  migrateToContactConfig,
+  isContactPageEmpty 
+} from '@/types/contact';
 
 export default function Contact() {
-  const [email, setEmail] = useState<string | null>(null);
-  const [linkedin, setLinkedin] = useState<string | null>(null);
-  const [calendar, setCalendar] = useState<string | null>(null);
-  const [buttons, setButtons] = useState<ButtonConfig[]>([]);
+  const [config, setConfig] = useState<ContactConfig>(defaultContactConfig);
   const [loading, setLoading] = useState(true);
-  const [enabled, setEnabled] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     trackPageView('/contact');
     
     getPublicSiteSettings().then((settings) => {
       if (settings?.pages?.contact) {
-        setEnabled(settings.pages.contact.enabled ?? true);
-        setEmail(settings.pages.contact.email || null);
-        setLinkedin(settings.pages.contact.linkedin || null);
-        setCalendar(settings.pages.contact.calendar || null);
-        setButtons(settings.pages.contact.buttons || []);
+        const oldContact = settings.pages.contact as any;
+        
+        // Check if it's new format or old format
+        if (oldContact.header && oldContact.contactInfo && oldContact.ctas) {
+          setConfig({ ...defaultContactConfig, ...oldContact });
+        } else {
+          // Old format - migrate
+          setConfig(migrateToContactConfig(oldContact));
+        }
       }
       setLoading(false);
     });
   }, []);
 
-  const handleClick = (type: 'email' | 'linkedin' | 'calendar') => {
-    trackContactClick(type);
-  };
-
-  if (!enabled && !loading) {
+  // Handle disabled page
+  if (!loading && !config.enabled) {
     return (
       <div className="section-spacing">
         <div className="container-content text-center">
@@ -43,31 +46,90 @@ export default function Contact() {
           <p className="text-muted-foreground">
             Contact page is currently disabled.
           </p>
+          <Button onClick={() => navigate('/')} variant="outline" className="mt-6">
+            Go Home
+          </Button>
         </div>
       </div>
     );
   }
 
+  // Handle empty page with autoHideIfEmpty
+  const isEmpty = isContactPageEmpty(config);
+  if (!loading && config.autoHideIfEmpty && isEmpty) {
+    return (
+      <div className="section-spacing">
+        <div className="container-content text-center max-w-2xl">
+          <h1 className="mb-4">Contact</h1>
+          <p className="text-muted-foreground">
+            No contact information is available at the moment.
+          </p>
+          <Button onClick={() => navigate('/')} variant="outline" className="mt-6">
+            Go Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleClick = (type: 'email' | 'linkedin' | 'calendar') => {
+    trackContactClick(type);
+  };
+
+  // Check if we should show contact info cards
+  const shouldShowEmail = config.contactInfo.show && 
+    config.contactInfo.email.show && 
+    config.contactInfo.email.value.trim();
+    
+  const shouldShowLinkedin = config.contactInfo.show && 
+    config.contactInfo.linkedin.show && 
+    config.contactInfo.linkedin.value.trim();
+    
+  const shouldShowCalendar = config.contactInfo.show && 
+    config.contactInfo.calendar.show && 
+    config.contactInfo.calendar.value.trim();
+
+  // Check if we should show CTA buttons
+  const shouldShowEmailButton = config.ctas.show && 
+    config.ctas.emailButton.show && 
+    config.contactInfo.email.value.trim();
+    
+  const shouldShowLinkedinButton = config.ctas.show && 
+    config.ctas.linkedinButton.show && 
+    config.contactInfo.linkedin.value.trim();
+    
+  const shouldShowCalendarButton = config.ctas.show && 
+    config.ctas.calendarButton.show && 
+    config.contactInfo.calendar.value.trim();
+
+  const visibleCustomButtons = config.ctas.show && 
+    config.ctas.customButtons.show 
+      ? config.ctas.customButtons.buttons.filter(b => b.visible && b.url.trim())
+      : [];
+
+  const hasAnyContactInfo = shouldShowEmail || shouldShowLinkedin || shouldShowCalendar;
+  const hasAnyCtas = shouldShowEmailButton || shouldShowLinkedinButton || shouldShowCalendarButton || visibleCustomButtons.length > 0;
+
   return (
     <div className="section-spacing">
       <div className="container-content max-w-2xl">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="mb-4">Get in Touch</h1>
-          <p className="text-lg text-muted-foreground">
-            I'm always open to discussing new projects, opportunities, or just having a 
-            conversation about product and technology.
-          </p>
-        </motion.div>
-
-        {/* Supabase Status Banner */}
-        <div className="mb-8">
-          <SupabaseStatus />
-        </div>
+        {config.header.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            {config.header.showTitle && config.header.title && (
+              <h1 className="mb-4">{config.header.title}</h1>
+            )}
+            {config.header.showSubtitle && config.header.subtitle && (
+              <p className="text-lg text-muted-foreground">
+                {config.header.subtitle}
+              </p>
+            )}
+          </motion.div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -78,18 +140,18 @@ export default function Contact() {
           </div>
         )}
 
-        {/* Contact Methods */}
-        {!loading && (
+        {/* Contact Info Cards */}
+        {!loading && hasAnyContactInfo && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="space-y-4"
           >
-            {/* Email */}
-            {email && (
+            {/* Email Card */}
+            {shouldShowEmail && (
               <a
-                href={`mailto:${email}`}
+                href={`mailto:${config.contactInfo.email.value}`}
                 onClick={() => handleClick('email')}
                 className="group flex items-center gap-4 p-6 border border-border rounded-lg bg-card hover:border-primary/30 hover:bg-accent/30 transition-all duration-300"
               >
@@ -98,18 +160,20 @@ export default function Contact() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium group-hover:text-primary transition-colors">
-                    Email
+                    {config.contactInfo.email.label}
                   </p>
-                  <p className="text-muted-foreground truncate">{email}</p>
+                  <p className="text-muted-foreground truncate">
+                    {config.contactInfo.email.value}
+                  </p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
               </a>
             )}
 
-            {/* LinkedIn */}
-            {linkedin && (
+            {/* LinkedIn Card */}
+            {shouldShowLinkedin && (
               <a
-                href={linkedin}
+                href={config.contactInfo.linkedin.value}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleClick('linkedin')}
@@ -120,7 +184,7 @@ export default function Contact() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium group-hover:text-primary transition-colors">
-                    LinkedIn
+                    {config.contactInfo.linkedin.label}
                   </p>
                   <p className="text-muted-foreground truncate">Connect with me</p>
                 </div>
@@ -128,10 +192,10 @@ export default function Contact() {
               </a>
             )}
 
-            {/* Calendar */}
-            {calendar && (
+            {/* Calendar Card */}
+            {shouldShowCalendar && (
               <a
-                href={calendar}
+                href={config.contactInfo.calendar.value}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleClick('calendar')}
@@ -142,32 +206,100 @@ export default function Contact() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium group-hover:text-primary transition-colors">
-                    Schedule a Meeting
+                    {config.contactInfo.calendar.label}
                   </p>
                   <p className="text-muted-foreground truncate">Book a time that works for you</p>
                 </div>
                 <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
               </a>
             )}
-
-            {/* Custom CTA Buttons */}
-            {buttons.length > 0 && (
-              <div className="flex flex-wrap gap-3 pt-4">
-                {buttons.filter(b => b.visible !== false).map((btn, i) => (
-                  <DynamicButton key={i} config={btn} />
-                ))}
-              </div>
-            )}
-
-            {/* Empty State */}
-            {!email && !linkedin && !calendar && buttons.length === 0 && (
-              <div className="text-center py-12 border border-dashed border-border rounded-lg">
-                <p className="text-muted-foreground">
-                  Contact information will appear here once configured.
-                </p>
-              </div>
-            )}
           </motion.div>
+        )}
+
+        {/* CTA Buttons */}
+        {!loading && hasAnyCtas && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap gap-3 mt-8 justify-center"
+          >
+            {shouldShowEmailButton && (
+              <Button
+                variant="default"
+                asChild
+              >
+                <a 
+                  href={`mailto:${config.contactInfo.email.value}`}
+                  onClick={() => handleClick('email')}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  {config.ctas.emailButton.label}
+                </a>
+              </Button>
+            )}
+            
+            {shouldShowLinkedinButton && (
+              <Button
+                variant="outline"
+                asChild
+              >
+                <a 
+                  href={config.contactInfo.linkedin.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleClick('linkedin')}
+                >
+                  <Linkedin className="w-4 h-4 mr-2" />
+                  {config.ctas.linkedinButton.label}
+                </a>
+              </Button>
+            )}
+            
+            {shouldShowCalendarButton && (
+              <Button
+                variant="outline"
+                asChild
+              >
+                <a 
+                  href={config.contactInfo.calendar.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleClick('calendar')}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {config.ctas.calendarButton.label}
+                </a>
+              </Button>
+            )}
+            
+            {/* Custom Buttons */}
+            {visibleCustomButtons.map((btn) => (
+              <Button
+                key={btn.id}
+                variant={btn.style === 'primary' ? 'default' : btn.style === 'ghost' ? 'ghost' : 'outline'}
+                asChild
+              >
+                <a 
+                  href={btn.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {btn.label}
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </a>
+              </Button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !hasAnyContactInfo && !hasAnyCtas && !config.header.show && (
+          <div className="text-center py-12 border border-dashed border-border rounded-lg">
+            <p className="text-muted-foreground">
+              Contact information will appear here once configured.
+            </p>
+          </div>
         )}
       </div>
     </div>
