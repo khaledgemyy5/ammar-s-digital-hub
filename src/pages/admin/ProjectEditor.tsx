@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import { getProjectBySlug, createProject, updateProject, clearCache } from '@/lib/db';
 import type { Project, ProjectSection, ProjectContent, ProjectStatus, DetailLevel } from '@/types/database';
+import { CustomSectionsEditor } from '@/components/project/CustomSectionsEditor';
+import { ProjectCustomSection, migrateCustomSections } from '@/types/customSection';
 
 const defaultSections: ProjectSection[] = [
   { id: 'snapshot', visible: true, order: 0 },
@@ -68,6 +70,7 @@ export default function ProjectEditor() {
   const [mediaItems, setMediaItems] = useState<Array<{ type: 'image' | 'video'; url: string; caption?: string }>>([]);
   const [evidenceLinks, setEvidenceLinks] = useState<Array<{ label: string; url: string; type: 'prd' | 'spec' | 'roadmap' | 'demo' | 'github' | 'other' }>>([]);
   const [uploading, setUploading] = useState(false);
+  const [customSections, setCustomSections] = useState<ProjectCustomSection[]>([]);
 
   useEffect(() => {
     if (!isNew && id) {
@@ -105,6 +108,10 @@ export default function ProjectEditor() {
       setContent(project.content || {});
       setMediaItems(project.media?.items || []);
       setEvidenceLinks(project.content?.evidence_pack || []);
+      
+      // Migrate custom sections to new format
+      const oldCustomSections = project.content?.custom_sections || [];
+      setCustomSections(migrateCustomSections(oldCustomSections));
     } catch (err) {
       toast.error('Error loading project');
       console.error(err);
@@ -217,7 +224,11 @@ export default function ProjectEditor() {
         published,
         confidential_message: confidentialMessage || null,
         sections_config: sections,
-        content: { ...content, evidence_pack: evidenceLinks },
+        content: { 
+          ...content, 
+          evidence_pack: evidenceLinks,
+          custom_sections: customSections, // New format custom sections
+        },
         media: { items: mediaItems },
       };
 
@@ -423,95 +434,11 @@ export default function ProjectEditor() {
               </CardContent>
             </Card>
 
-            {/* Custom Sections */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Custom Sections (max 2)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {(content.custom_sections || []).map((cs: any, idx: number) => (
-                  <div key={cs.id || idx} className="p-4 border rounded-lg space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Input
-                        value={cs.title || ''}
-                        onChange={(e) => {
-                          const updated = [...(content.custom_sections || [])];
-                          updated[idx] = { ...updated[idx], title: e.target.value };
-                          updateContent('custom_sections', updated);
-                        }}
-                        placeholder="Section Title"
-                      />
-                      <Select
-                        value={cs.kind || 'text'}
-                        onValueChange={(v: 'text' | 'bullets') => {
-                          const updated = [...(content.custom_sections || [])];
-                          updated[idx] = { ...updated[idx], kind: v };
-                          updateContent('custom_sections', updated);
-                        }}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="bullets">Bullets</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          const updated = (content.custom_sections || []).filter((_: any, i: number) => i !== idx);
-                          updateContent('custom_sections', updated);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                    {cs.kind === 'bullets' ? (
-                      <Textarea
-                        value={(cs.bullets || []).join('\n')}
-                        onChange={(e) => {
-                          const updated = [...(content.custom_sections || [])];
-                          updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(Boolean) };
-                          updateContent('custom_sections', updated);
-                        }}
-                        placeholder="One bullet per line..."
-                        rows={4}
-                      />
-                    ) : (
-                      <Textarea
-                        value={cs.content || ''}
-                        onChange={(e) => {
-                          const updated = [...(content.custom_sections || [])];
-                          updated[idx] = { ...updated[idx], content: e.target.value };
-                          updateContent('custom_sections', updated);
-                        }}
-                        placeholder="Section content..."
-                        rows={4}
-                      />
-                    )}
-                  </div>
-                ))}
-                {(content.custom_sections || []).length < 2 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const newSection = {
-                        id: `custom_${Date.now()}`,
-                        title: '',
-                        kind: 'text',
-                        content: ''
-                      };
-                      updateContent('custom_sections', [...(content.custom_sections || []), newSection]);
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Custom Section
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            {/* Custom Sections - New Editor */}
+            <CustomSectionsEditor
+              sections={customSections}
+              onChange={setCustomSections}
+            />
           </div>
         </TabsContent>
 

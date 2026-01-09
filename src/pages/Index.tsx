@@ -9,10 +9,11 @@ import { trackPageView } from '@/lib/analytics';
 import { getFeaturedProjects, getFeaturedWriting, getPublicSiteSettings } from '@/lib/db';
 import type { 
   Project, WritingItem, HomeSection, SiteSettings,
-  HeroConfig, ExperienceSnapshotConfig, HowIWorkConfig, 
+  HeroConfig, ExperienceSnapshotConfig, 
   FeaturedProjectsConfig, WritingPreviewConfig, ContactCTAConfig 
 } from '@/types/database';
 import { ContactConfig, migrateToContactConfig, defaultContactConfig } from '@/types/contact';
+import { HowIWorkFullConfig, migrateToHowIWorkConfig } from '@/types/howIWork';
 
 const defaultSections: HomeSection[] = [
   { id: 'hero', visible: true, order: 0 },
@@ -29,6 +30,7 @@ const Index = () => {
   const [sections, setSections] = useState<HomeSection[]>(defaultSections);
   const [settings, setSettings] = useState<Partial<SiteSettings> | null>(null);
   const [contactConfig, setContactConfig] = useState<ContactConfig>(defaultContactConfig);
+  const [howIWorkConfig, setHowIWorkConfig] = useState<HowIWorkFullConfig | null>(null);
 
   useEffect(() => {
     trackPageView('/');
@@ -56,6 +58,11 @@ const Index = () => {
           } else {
             setContactConfig(migrateToContactConfig(oldContact));
           }
+        }
+        
+        // Load how I work config
+        if (siteSettings?.pages?.howIWork) {
+          setHowIWorkConfig(migrateToHowIWorkConfig(siteSettings.pages.howIWork));
         }
       }
     }
@@ -128,12 +135,14 @@ const Index = () => {
       }
       
       case 'how_i_work': {
-        const config = getSectionConfig<HowIWorkConfig>(id);
+        // Use new config if available, otherwise use section config
+        const sectionConfig = getSectionConfig<HowIWorkFullConfig>(id);
+        const configToUse = howIWorkConfig || sectionConfig;
         return (
           <HowIWork 
             key={id} 
             title={getSectionTitle(id, 'How I Work')}
-            config={config}
+            config={configToUse}
           />
         );
       }

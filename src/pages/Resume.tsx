@@ -5,144 +5,32 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { SupabaseStatus } from '@/components/ui/SupabaseStatus';
 import { getPublicSiteSettings } from '@/lib/db';
 import { trackPageView, trackResumeDownload } from '@/lib/analytics';
-
-interface ResumeData {
-  summary: string;
-  experience: Array<{
-    title: string;
-    company: string;
-    location?: string;
-    period: string;
-    highlights: string[];
-  }>;
-  projects: Array<{
-    name: string;
-    description: string;
-    link?: string;
-  }>;
-  skills: {
-    [category: string]: string[];
-  };
-  education: Array<{
-    degree: string;
-    institution: string;
-    year: string;
-  }>;
-}
-
-// Default resume data for display
-const defaultResumeData: ResumeData = {
-  summary: "Technical Product Manager with 5+ years of experience bridging engineering and business. Previously worked as a Software Engineer and LLM Developer. Specialized in building AI-powered products that solve real user problems.",
-  experience: [
-    {
-      title: "Technical Product Manager",
-      company: "Tech Company",
-      location: "Remote",
-      period: "2022 - Present",
-      highlights: [
-        "Led product strategy for AI/ML features serving 100K+ users",
-        "Reduced time-to-market by 40% through improved cross-functional processes",
-        "Defined and tracked KPIs that increased user retention by 25%"
-      ]
-    },
-    {
-      title: "Software Engineer",
-      company: "Startup Inc",
-      location: "San Francisco, CA",
-      period: "2020 - 2022",
-      highlights: [
-        "Built LLM-powered recommendation system from scratch",
-        "Architected microservices handling 1M+ daily requests",
-        "Mentored junior developers and established coding standards"
-      ]
-    }
-  ],
-  projects: [
-    {
-      name: "AI Product Recommendation Engine",
-      description: "Built an LLM-based recommendation system that increased conversion rates by 35%"
-    },
-    {
-      name: "Developer Platform Redesign",
-      description: "Led complete redesign serving 50K+ developers, improving onboarding by 60%"
-    }
-  ],
-  skills: {
-    "Product": ["Product Strategy", "Roadmapping", "User Research", "A/B Testing", "Analytics"],
-    "Technical": ["Python", "TypeScript", "React", "Node.js", "PostgreSQL", "AWS"],
-    "AI/ML": ["LLMs", "Prompt Engineering", "RAG", "Fine-tuning", "Vector Databases"]
-  },
-  education: [
-    {
-      degree: "B.S. Computer Science",
-      institution: "University",
-      year: "2020"
-    }
-  ]
-};
+import { ResumeConfig, defaultResumeConfig, generatePlainTextResume, migrateToResumeConfig } from '@/types/resume';
 
 export default function Resume() {
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [showCopyText, setShowCopyText] = useState(true);
-  const [showDownload, setShowDownload] = useState(true);
+  const [config, setConfig] = useState<ResumeConfig>(defaultResumeConfig);
   const [loading, setLoading] = useState(true);
-  const [enabled, setEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
-  const resumeData = defaultResumeData;
 
   useEffect(() => {
     trackPageView('/resume');
     
     getPublicSiteSettings().then((settings) => {
       if (settings?.pages?.resume) {
-        setEnabled(settings.pages.resume.enabled ?? true);
-        setPdfUrl(settings.pages.resume.pdfUrl || null);
-        setShowCopyText(settings.pages.resume.showCopyText ?? true);
-        setShowDownload(settings.pages.resume.showDownload ?? true);
+        const resumeData = settings.pages.resume as any;
+        // Migrate if needed
+        const migratedConfig = migrateToResumeConfig(resumeData);
+        setConfig(migratedConfig);
       }
       setLoading(false);
     });
   }, []);
 
-  const generatePlainText = (): string => {
-    let text = `AMMAR JABER\nTechnical Product Manager\n\n`;
-    text += `SUMMARY\n${resumeData.summary}\n\n`;
-    
-    text += `EXPERIENCE\n`;
-    resumeData.experience.forEach(exp => {
-      text += `${exp.title} - ${exp.company}${exp.location ? ` (${exp.location})` : ''}\n`;
-      text += `${exp.period}\n`;
-      exp.highlights.forEach(h => {
-        text += `• ${h}\n`;
-      });
-      text += `\n`;
-    });
-
-    text += `PROJECTS\n`;
-    resumeData.projects.forEach(proj => {
-      text += `${proj.name}\n${proj.description}\n\n`;
-    });
-
-    text += `SKILLS\n`;
-    Object.entries(resumeData.skills).forEach(([category, skills]) => {
-      text += `${category}: ${skills.join(', ')}\n`;
-    });
-    text += `\n`;
-
-    text += `EDUCATION\n`;
-    resumeData.education.forEach(edu => {
-      text += `${edu.degree} - ${edu.institution} (${edu.year})\n`;
-    });
-
-    return text;
-  };
-
   const handleCopyText = async () => {
     try {
-      await navigator.clipboard.writeText(generatePlainText());
+      await navigator.clipboard.writeText(generatePlainTextResume(config));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -152,12 +40,12 @@ export default function Resume() {
 
   const handleDownload = () => {
     trackResumeDownload();
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
+    if (config.pdfUrl) {
+      window.open(config.pdfUrl, '_blank');
     }
   };
 
-  if (!enabled && !loading) {
+  if (!config.enabled && !loading) {
     return (
       <div className="section-spacing">
         <div className="container-content text-center">
@@ -169,6 +57,15 @@ export default function Resume() {
       </div>
     );
   }
+
+  const sortedSections = [...config.sections]
+    .filter(s => s.enabled)
+    .sort((a, b) => a.order - b.order);
+
+  const getSectionTitle = (id: string, defaultTitle: string) => {
+    const section = config.sections.find(s => s.id === id);
+    return section?.titleOverride || defaultTitle;
+  };
 
   return (
     <div className="section-spacing">
@@ -185,7 +82,7 @@ export default function Resume() {
           </div>
           
           <div className="flex gap-3">
-            {showCopyText && (
+            {config.showCopyText && (
               <Button 
                 variant="outline" 
                 onClick={handleCopyText}
@@ -195,7 +92,7 @@ export default function Resume() {
                 {copied ? 'Copied!' : 'Copy Text'}
               </Button>
             )}
-            {showDownload && pdfUrl && (
+            {config.showDownload && config.pdfUrl && (
               <Button onClick={handleDownload} className="gap-2">
                 <Download className="w-4 h-4" />
                 Download PDF
@@ -203,11 +100,6 @@ export default function Resume() {
             )}
           </div>
         </motion.div>
-
-        {/* Supabase Status Banner */}
-        <div className="mb-8">
-          <SupabaseStatus />
-        </div>
 
         {/* Loading State */}
         {loading && (
@@ -227,111 +119,211 @@ export default function Resume() {
             className="bg-card border border-border rounded-lg p-8 md:p-10 print:shadow-none print:border-none"
           >
             {/* Name & Title */}
-            <header className="text-center mb-8">
-              <h2 className="text-3xl mb-2">Ammar Jaber</h2>
-              <p className="text-lg text-primary font-medium">Technical Product Manager</p>
-            </header>
+            {(config.personalInfo.showName || config.personalInfo.showTitle) && (
+              <>
+                <header className="text-center mb-8">
+                  {config.personalInfo.showName && (
+                    <h2 className="text-3xl mb-2">{config.personalInfo.name}</h2>
+                  )}
+                  {config.personalInfo.showTitle && (
+                    <p className="text-lg text-primary font-medium">{config.personalInfo.title}</p>
+                  )}
+                </header>
+                <Separator className="mb-8" />
+              </>
+            )}
 
-            <Separator className="mb-8" />
-
-            {/* Summary */}
-            <section className="mb-8">
-              <h3 className="text-lg font-semibold mb-3 text-primary">Summary</h3>
-              <p className="text-muted-foreground leading-relaxed">{resumeData.summary}</p>
-            </section>
-
-            <Separator className="mb-8" />
-
-            {/* Experience */}
-            <section className="mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-primary">Experience</h3>
-              <div className="space-y-6">
-                {resumeData.experience.map((exp, index) => (
-                  <div key={index}>
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold">{exp.title}</h4>
-                        <p className="text-muted-foreground">
-                          {exp.company}{exp.location && ` • ${exp.location}`}
+            {/* Dynamic Sections */}
+            {sortedSections.map((sectionDef, idx) => {
+              const showSeparator = idx < sortedSections.length - 1;
+              
+              switch (sectionDef.id) {
+                case 'summary':
+                  if (!config.summary) return null;
+                  return (
+                    <div key="summary">
+                      <section className="mb-8">
+                        <h3 className="text-lg font-semibold mb-3 text-primary">
+                          {getSectionTitle('summary', 'Summary')}
+                        </h3>
+                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                          {config.summary}
                         </p>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{exp.period}</p>
+                      </section>
+                      {showSeparator && <Separator className="mb-8" />}
                     </div>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-1">
-                      {exp.highlights.map((highlight, i) => (
-                        <li key={i}>{highlight}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  );
 
-            <Separator className="mb-8" />
-
-            {/* Projects */}
-            <section className="mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-primary">Selected Projects</h3>
-              <div className="space-y-4">
-                {resumeData.projects.map((proj, index) => (
-                  <div key={index}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium">{proj.name}</h4>
-                      {proj.link && (
-                        <a 
-                          href={proj.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
+                case 'experience':
+                  if (config.experience.length === 0) return null;
+                  return (
+                    <div key="experience">
+                      <section className="mb-8">
+                        <h3 className="text-lg font-semibold mb-4 text-primary">
+                          {getSectionTitle('experience', 'Experience')}
+                        </h3>
+                        <div className="space-y-6">
+                          {config.experience.map((exp) => (
+                            <div key={exp.id}>
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
+                                <div>
+                                  <h4 className="font-semibold">{exp.role}</h4>
+                                  <p className="text-muted-foreground">
+                                    {exp.company}{exp.location && ` • ${exp.location}`}
+                                  </p>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {exp.startDate} - {exp.endDate || 'Present'}
+                                </p>
+                              </div>
+                              {exp.bullets.length > 0 && (
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-1">
+                                  {exp.bullets.filter(b => b.trim()).map((bullet, i) => (
+                                    <li key={i}>{bullet}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      {showSeparator && <Separator className="mb-8" />}
                     </div>
-                    <p className="text-muted-foreground">{proj.description}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  );
 
-            <Separator className="mb-8" />
-
-            {/* Skills */}
-            <section className="mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-primary">Skills</h3>
-              <div className="space-y-4">
-                {Object.entries(resumeData.skills).map(([category, skills]) => (
-                  <div key={category}>
-                    <h4 className="font-medium mb-2">{category}</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {skills.map((skill) => (
-                        <Badge key={skill} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
+                case 'projects':
+                  if (config.projects.length === 0) return null;
+                  return (
+                    <div key="projects">
+                      <section className="mb-8">
+                        <h3 className="text-lg font-semibold mb-4 text-primary">
+                          {getSectionTitle('projects', 'Selected Projects')}
+                        </h3>
+                        <div className="space-y-4">
+                          {config.projects.map((proj) => (
+                            <div key={proj.id}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium">{proj.title}</h4>
+                                {proj.link && (
+                                  <a 
+                                    href={proj.link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground">{proj.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      {showSeparator && <Separator className="mb-8" />}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  );
 
-            <Separator className="mb-8" />
-
-            {/* Education */}
-            <section>
-              <h3 className="text-lg font-semibold mb-4 text-primary">Education</h3>
-              <div className="space-y-3">
-                {resumeData.education.map((edu, index) => (
-                  <div key={index} className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h4 className="font-medium">{edu.degree}</h4>
-                      <p className="text-muted-foreground">{edu.institution}</p>
+                case 'skills':
+                  if (config.skills.categories.length === 0) return null;
+                  return (
+                    <div key="skills">
+                      <section className="mb-8">
+                        <h3 className="text-lg font-semibold mb-4 text-primary">
+                          {getSectionTitle('skills', 'Skills')}
+                        </h3>
+                        <div className="space-y-4">
+                          {config.skills.categories.map((cat) => (
+                            <div key={cat.id}>
+                              <h4 className="font-medium mb-2">{cat.name}</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {cat.items.filter(s => s.trim()).map((skill) => (
+                                  <Badge key={skill} variant="secondary">
+                                    {skill}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      {showSeparator && <Separator className="mb-8" />}
                     </div>
-                    <p className="text-sm text-muted-foreground">{edu.year}</p>
-                  </div>
-                ))}
+                  );
+
+                case 'education':
+                  if (config.education.length === 0) return null;
+                  return (
+                    <div key="education">
+                      <section className="mb-8">
+                        <h3 className="text-lg font-semibold mb-4 text-primary">
+                          {getSectionTitle('education', 'Education')}
+                        </h3>
+                        <div className="space-y-3">
+                          {config.education.map((edu) => (
+                            <div key={edu.id} className="flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <h4 className="font-medium">{edu.degree}</h4>
+                                <p className="text-muted-foreground">{edu.institution}</p>
+                                {edu.details && (
+                                  <p className="text-sm text-muted-foreground mt-1">{edu.details}</p>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{edu.year}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      {showSeparator && <Separator className="mb-8" />}
+                    </div>
+                  );
+
+                case 'certifications':
+                  if (config.certifications.length === 0) return null;
+                  return (
+                    <div key="certifications">
+                      <section>
+                        <h3 className="text-lg font-semibold mb-4 text-primary">
+                          {getSectionTitle('certifications', 'Certifications')}
+                        </h3>
+                        <div className="space-y-3">
+                          {config.certifications.map((cert) => (
+                            <div key={cert.id} className="flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium">{cert.name}</h4>
+                                {cert.url && (
+                                  <a 
+                                    href={cert.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {cert.issuer} • {cert.year}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    </div>
+                  );
+
+                default:
+                  return null;
+              }
+            })}
+
+            {/* Empty State */}
+            {sortedSections.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No resume content configured yet.</p>
+                <p className="text-sm mt-2">Configure your resume in the admin panel.</p>
               </div>
-            </section>
+            )}
           </motion.div>
         )}
       </div>

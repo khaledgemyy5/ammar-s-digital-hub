@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getProjectBySlug, getPublishedProjects } from '@/lib/db';
 import { trackEvent } from '@/lib/analytics';
 import type { Project, ProjectSection } from '@/types/database';
+import { CustomSectionRenderer } from '@/components/project/CustomSectionRenderer';
+import { migrateCustomSections, ProjectCustomSection } from '@/types/customSection';
 
 const defaultSections: ProjectSection[] = [
   { id: 'snapshot', visible: true, order: 0 },
@@ -321,29 +323,13 @@ export default function ProjectDetail() {
         ) : null;
 
       case 'custom_sections':
-        return project.content.custom_sections?.length ? (
-          <>
-            {project.content.custom_sections.map((custom, i) => {
-              const isBullets = custom.kind === 'bullets' || custom.type === 'bullets';
-              const content = custom.contentText || custom.content || '';
-              const bulletItems = custom.bullets || content.split('\n').filter(Boolean);
-              
-              return (
-                <Section key={i} title={custom.title}>
-                  {isBullets ? (
-                    <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                      {bulletItems.map((line, j) => (
-                        <li key={j}>{line}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground whitespace-pre-wrap">{content}</p>
-                  )}
-                </Section>
-              );
-            })}
-          </>
-        ) : null;
+        // Use new renderer with migrated custom sections
+        const oldSections = project.content?.custom_sections || [];
+        const migratedSections: ProjectCustomSection[] = migrateCustomSections(oldSections);
+        
+        if (migratedSections.length === 0) return null;
+        
+        return <CustomSectionRenderer sections={migratedSections} />;
 
       default:
         return null;
