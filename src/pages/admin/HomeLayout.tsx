@@ -13,7 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { adminGetSiteSettings, adminUpdateSiteSettings, clearCache } from '@/lib/db';
-import type { HomeSection, ButtonConfig, HeroConfig } from '@/types/database';
+import type { HomeSection, ButtonConfig, HeroConfig, PageConfig } from '@/types/database';
+import { ExperienceSnapshotEditor } from '@/components/admin/ExperienceSnapshotEditor';
+import { 
+  ExperienceSnapshotFullConfig, 
+  defaultExperienceSnapshotConfig,
+  migrateToExperienceSnapshotFullConfig 
+} from '@/types/experienceSnapshot';
 
 const sectionLabels: Record<string, string> = {
   hero: 'Hero Section',
@@ -51,6 +57,8 @@ export default function AdminHomeLayout() {
   const [saving, setSaving] = useState(false);
   const [sections, setSections] = useState<HomeSection[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [experienceConfig, setExperienceConfig] = useState<ExperienceSnapshotFullConfig>(defaultExperienceSnapshotConfig);
+  const [pages, setPages] = useState<Partial<PageConfig>>({});
 
   useEffect(() => {
     loadData();
@@ -69,6 +77,22 @@ export default function AdminHomeLayout() {
       });
       setSections(withDefaults);
     }
+    
+    // Load pages config
+    if (settings?.pages) {
+      setPages(settings.pages as PageConfig);
+      
+      // Load experience config from pages or section config
+      if (settings.pages.experienceSnapshot) {
+        setExperienceConfig(migrateToExperienceSnapshotFullConfig(settings.pages.experienceSnapshot));
+      } else {
+        const expSection = (settings.home_sections as HomeSection[])?.find(s => s.id === 'experience_snapshot');
+        if (expSection?.config) {
+          setExperienceConfig(migrateToExperienceSnapshotFullConfig(expSection.config));
+        }
+      }
+    }
+    
     setLoading(false);
   };
 
@@ -80,8 +104,20 @@ export default function AdminHomeLayout() {
         order: index,
       }));
 
+      // Update experience snapshot visibility based on config
+      const finalSections = updatedSections.map(s => {
+        if (s.id === 'experience_snapshot') {
+          return { ...s, visible: experienceConfig.enabled };
+        }
+        return s;
+      });
+
       const success = await adminUpdateSiteSettings({
-        home_sections: updatedSections,
+        home_sections: finalSections,
+        pages: {
+          ...pages,
+          experienceSnapshot: experienceConfig,
+        } as PageConfig,
       });
 
       if (success) {
@@ -284,7 +320,7 @@ export default function AdminHomeLayout() {
                       </button>
 
                       {/* Expand button for editable sections */}
-                      {(section.id === 'hero' || section.id === 'how_i_work' || section.id === 'contact_cta') && (
+                      {(section.id === 'hero' || section.id === 'how_i_work' || section.id === 'contact_cta' || section.id === 'experience_snapshot') && (
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             {expandedSection === section.id ? (
@@ -484,6 +520,14 @@ export default function AdminHomeLayout() {
                               <Plus className="w-4 h-4 mr-1" /> Add Principle
                             </Button>
                           </div>
+                        )}
+
+                        {/* Experience Snapshot Config */}
+                        {section.id === 'experience_snapshot' && (
+                          <ExperienceSnapshotEditor
+                            config={experienceConfig}
+                            onChange={setExperienceConfig}
+                          />
                         )}
 
                         {/* Contact CTA Config */}
