@@ -161,6 +161,11 @@ export interface PageConfig {
     calendar?: string;
     buttons?: ButtonConfig[];
   };
+  howIWork?: {
+    enabled: boolean;
+    titleOverride?: string;
+    items?: any[];
+  };
 }
 
 // Site settings (singleton)
@@ -187,15 +192,29 @@ export interface ProjectSection {
   titleOverride?: string;
 }
 
+// Custom section types for projects
+export type CustomSectionKind = 'markdown' | 'bullets' | 'code' | 'embed' | 'text';
+
 // Custom section (max 2 per project)
 export interface CustomSection {
   id: string;
   title: string;
-  kind?: 'text' | 'bullets';
-  type?: 'text' | 'bullets'; // Legacy support
+  type?: CustomSectionKind;
+  kind?: 'text' | 'bullets'; // Legacy support
+  enabled?: boolean;
+  order?: number;
   content?: string; // Legacy support
   contentText?: string;
+  markdown?: string;
   bullets?: string[];
+  code?: {
+    content: string;
+    language: string;
+  };
+  embed?: {
+    url: string;
+    isAllowed?: boolean;
+  };
 }
 
 // Project links
