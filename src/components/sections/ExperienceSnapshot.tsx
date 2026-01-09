@@ -1,54 +1,54 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-interface ExperienceItem {
-  title: string;
-  company: string;
-  period: string;
-  description: string;
-}
+import type { ExperienceSnapshotConfig, ExperienceItem } from '@/types/database';
 
 interface ExperienceSnapshotProps {
   title?: string;
-  experiences?: ExperienceItem[];
+  config?: ExperienceSnapshotConfig;
+  limit?: number;
 }
 
 const defaultExperiences: ExperienceItem[] = [
   {
-    title: 'Senior Technical Product Manager',
+    role: 'Senior Technical Product Manager',
     company: 'AI Startup',
-    period: '2022 – Present',
+    years: '2022 – Present',
     description: 'Leading product strategy for LLM-powered features serving 100K+ users.'
   },
   {
-    title: 'Product Manager',
+    role: 'Product Manager',
     company: 'Tech Company',
-    period: '2020 – 2022',
+    years: '2020 – 2022',
     description: 'Shipped core platform features that increased engagement by 40%.'
   },
   {
-    title: 'Software Engineer',
+    role: 'Software Engineer',
     company: 'Enterprise SaaS',
-    period: '2018 – 2020',
+    years: '2018 – 2020',
     description: 'Built scalable backend services handling 1M+ daily requests.'
   }
 ];
 
 export function ExperienceSnapshot({
   title = 'Experience Snapshot',
-  experiences = defaultExperiences
+  config,
+  limit = 3
 }: ExperienceSnapshotProps) {
+  const experiences = (config?.items?.length ? config.items : defaultExperiences).slice(0, limit);
+  const ctaLabel = config?.ctaLabel || 'Full Resume';
+  const ctaHref = config?.ctaHref || '/resume';
+
   return (
-    <section className="section-spacing-sm bg-secondary/30">
+    <section id="experience" className="section-spacing-sm bg-secondary/30">
       <div className="container-content">
         <div className="flex items-center justify-between mb-10">
           <h2 className="text-2xl md:text-3xl">{title}</h2>
           <Link 
-            to="/resume" 
+            to={ctaHref} 
             className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
           >
-            Full Resume
+            {ctaLabel}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -72,11 +72,11 @@ export function ExperienceSnapshot({
 
                 <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-6">
                   <span className="text-sm text-muted-foreground whitespace-nowrap min-w-[120px]">
-                    {exp.period}
+                    {exp.years}
                   </span>
                   <div>
                     <h3 className="text-lg font-semibold font-heading">
-                      {exp.title}
+                      {exp.role}
                     </h3>
                     <p className="text-primary font-medium mb-2">{exp.company}</p>
                     <p className="text-muted-foreground">{exp.description}</p>

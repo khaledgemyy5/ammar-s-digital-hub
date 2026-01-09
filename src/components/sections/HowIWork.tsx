@@ -3,51 +3,54 @@ import { BarChart3, Users, Code2, Lightbulb } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface WorkPrinciple {
-  icon: LucideIcon;
   title: string;
   description: string;
 }
 
+interface HowIWorkConfig {
+  bullets?: WorkPrinciple[];
+}
+
 interface HowIWorkProps {
   title?: string;
-  principles?: WorkPrinciple[];
+  config?: HowIWorkConfig;
 }
 
 const defaultPrinciples: WorkPrinciple[] = [
   {
-    icon: BarChart3,
     title: 'Data-Driven Strategy',
     description: 'I ground every product decision in data. From user research to A/B testing, evidence beats assumptions.'
   },
   {
-    icon: Users,
     title: 'User-Centric Design',
     description: 'Products succeed when they solve real problems. I obsess over understanding user needs and pain points.'
   },
   {
-    icon: Code2,
     title: 'Engineering Fluency',
     description: 'My technical background means I can have deep conversations with engineers and make realistic tradeoffs.'
   },
   {
-    icon: Lightbulb,
     title: 'Clarity Over Complexity',
     description: 'The best solutions are often the simplest. I focus on reducing complexity while maximizing impact.'
   }
 ];
 
+const iconMap: LucideIcon[] = [BarChart3, Users, Code2, Lightbulb];
+
 export function HowIWork({
   title = 'How I Work',
-  principles = defaultPrinciples
+  config
 }: HowIWorkProps) {
+  const principles = config?.bullets?.length ? config.bullets : defaultPrinciples;
+
   return (
-    <section className="section-spacing-sm bg-secondary/30">
+    <section id="how-i-work" className="section-spacing-sm bg-secondary/30">
       <div className="container-content">
         <h2 className="text-2xl md:text-3xl mb-10">{title}</h2>
 
         <div className="grid md:grid-cols-2 gap-6 md:gap-8">
           {principles.map((principle, index) => {
-            const Icon = principle.icon;
+            const Icon = iconMap[index % iconMap.length];
             return (
               <motion.div
                 key={index}

@@ -97,12 +97,8 @@ const Index = () => {
           <ExperienceSnapshot 
             key={id} 
             title={getSectionTitle(id, 'Experience Snapshot')}
-            experiences={config?.items?.map(item => ({
-              title: item.role,
-              company: item.company,
-              period: item.years,
-              description: item.description
-            }))}
+            config={config}
+            limit={getSectionLimit(id, 3)}
           />
         );
       }
@@ -125,11 +121,7 @@ const Index = () => {
           <HowIWork 
             key={id} 
             title={getSectionTitle(id, 'How I Work')}
-            principles={config?.bullets?.map(bullet => ({
-              icon: undefined, // Would need to map icon string to component
-              title: bullet.title,
-              description: bullet.description
-            }))}
+            config={config}
           />
         );
       }
@@ -153,11 +145,13 @@ const Index = () => {
         return (
           <ContactCTA 
             key={id}
-            title={config?.headline}
-            subtitle={config?.body}
-            email={settings?.pages?.contact?.email}
-            linkedin={settings?.pages?.contact?.linkedin}
-            calendar={settings?.pages?.contact?.calendar}
+            title={getSectionTitle(id, config?.headline)}
+            config={{
+              ...config,
+              email: settings?.pages?.contact?.email,
+              linkedin: settings?.pages?.contact?.linkedin,
+              calendar: settings?.pages?.contact?.calendar,
+            }}
           />
         );
       }
