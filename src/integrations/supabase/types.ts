@@ -183,6 +183,7 @@ export type Database = {
           language: Database["public"]["Enums"]["language_type"] | null
           order_index: number | null
           platform_label: string | null
+          published_at: string | null
           show_why: boolean | null
           title: string
           updated_at: string
@@ -198,6 +199,7 @@ export type Database = {
           language?: Database["public"]["Enums"]["language_type"] | null
           order_index?: number | null
           platform_label?: string | null
+          published_at?: string | null
           show_why?: boolean | null
           title: string
           updated_at?: string
@@ -213,6 +215,7 @@ export type Database = {
           language?: Database["public"]["Enums"]["language_type"] | null
           order_index?: number | null
           platform_label?: string | null
+          published_at?: string | null
           show_why?: boolean | null
           title?: string
           updated_at?: string

@@ -36,8 +36,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { getAllWritingCategories, getAllWritingItems, clearCache } from '@/lib/db';
 import type { WritingCategory, WritingItem, Language } from '@/types/database';
 
-// Type fix for nullable category_id from database
-type WritingItemFromDB = Omit<WritingItem, 'category_id'> & { category_id: string | null };
+// Type fix for nullable fields from database
+type WritingItemFromDB = Omit<WritingItem, 'category_id' | 'published_at'> & { category_id: string | null; published_at: string | null };
 
 export default function AdminWriting() {
   const [categories, setCategories] = useState<WritingCategory[]>([]);
@@ -64,6 +64,7 @@ export default function AdminWriting() {
     order_index: 0,
     why_this_matters: '',
     show_why: false,
+    published_at: '' as string,
   });
   const [deleteItem, setDeleteItem] = useState<string | null>(null);
   
@@ -76,7 +77,7 @@ export default function AdminWriting() {
       getAllWritingItems(),
     ]);
     setCategories(cats);
-    setItems(itms);
+    setItems(itms as WritingItemFromDB[]);
     setLoading(false);
   };
 
@@ -182,6 +183,7 @@ export default function AdminWriting() {
       order_index: items.length,
       why_this_matters: '',
       show_why: false,
+      published_at: '',
     });
   };
 
@@ -198,6 +200,7 @@ export default function AdminWriting() {
       order_index: item.order_index,
       why_this_matters: item.why_this_matters || '',
       show_why: item.show_why,
+      published_at: item.published_at ? item.published_at.split('T')[0] : '',
     });
   };
 
@@ -220,6 +223,7 @@ export default function AdminWriting() {
         order_index: itemForm.order_index,
         why_this_matters: itemForm.why_this_matters,
         show_why: itemForm.show_why,
+        published_at: itemForm.published_at ? new Date(itemForm.published_at).toISOString() : null,
       };
 
       if (editingItem?.id === 'new') {
@@ -520,21 +524,32 @@ export default function AdminWriting() {
                 </Select>
               </div>
             </div>
-            <div>
-              <Label>Language</Label>
-              <Select
-                value={itemForm.language}
-                onValueChange={(v) => setItemForm({ ...itemForm, language: v as Language })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="AUTO">Auto-detect</SelectItem>
-                  <SelectItem value="EN">English</SelectItem>
-                  <SelectItem value="AR">Arabic</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Published Date</Label>
+                <Input
+                  type="date"
+                  value={itemForm.published_at}
+                  onChange={(e) => setItemForm({ ...itemForm, published_at: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Language</Label>
+                <Select
+                  value={itemForm.language}
+                  onValueChange={(v) => setItemForm({ ...itemForm, language: v as Language })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AUTO">Auto-detect</SelectItem>
+                    <SelectItem value="EN">English</SelectItem>
+                    <SelectItem value="AR">Arabic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label>Why This Matters</Label>
