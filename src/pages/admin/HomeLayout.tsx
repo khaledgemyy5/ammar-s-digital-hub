@@ -322,6 +322,25 @@ export default function AdminHomeLayout() {
                               </div>
                             </div>
 
+                            {/* Greeting Settings */}
+                            <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                              <Switch
+                                checked={(section.config as HeroConfig)?.showGreeting !== false}
+                                onCheckedChange={(checked) => updateSectionConfig('hero', { showGreeting: checked })}
+                              />
+                              <div className="flex-1">
+                                <Label className="text-sm">Show greeting text</Label>
+                                {(section.config as HeroConfig)?.showGreeting !== false && (
+                                  <Input
+                                    value={(section.config as HeroConfig)?.greetingText || "Hi, I'm"}
+                                    onChange={(e) => updateSectionConfig('hero', { greetingText: e.target.value })}
+                                    className="mt-1 h-8"
+                                    placeholder="Hi, I'm"
+                                  />
+                                )}
+                              </div>
+                            </div>
+
                             <div>
                               <Label>Transition Line</Label>
                               <Input

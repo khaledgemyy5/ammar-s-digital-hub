@@ -58,6 +58,15 @@ export function Navbar({
     >
       <div className="container-content">
         <nav className="flex items-center justify-between h-16 md:h-20">
+          {/* Mobile Menu Button - Left side */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden p-2 text-foreground hover:text-primary transition-colors order-first"
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+
           {/* Logo/Name */}
           <Link 
             to="/" 
@@ -98,14 +107,8 @@ export function Navbar({
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-foreground hover:text-primary transition-colors"
-            aria-label={isOpen ? 'Close menu' : 'Open menu'}
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Spacer for mobile to balance layout */}
+          <div className="w-10 md:hidden" />
         </nav>
       </div>
 
