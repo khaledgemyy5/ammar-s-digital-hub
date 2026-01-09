@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,50 +34,52 @@ import AdminSEO from "./pages/admin/SEO";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <ThemeProvider>
-        <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/:slug" element={<ProjectDetail />} />
-            <Route path="/writing" element={<Writing />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/resume" element={<Resume />} />
-          </Route>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                {/* Public routes */}
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:slug" element={<ProjectDetail />} />
+                  <Route path="/writing" element={<Writing />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/resume" element={<Resume />} />
+                </Route>
 
-          {/* Admin routes */}
-          <Route path="/admin/setup" element={<AdminSetup />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="home-layout" element={<AdminHomeLayout />} />
-            <Route path="projects" element={<AdminProjects />} />
-            <Route path="projects/:id" element={<ProjectEditor />} />
-            <Route path="writing" element={<AdminWriting />} />
-            <Route path="pages" element={<AdminPages />} />
-            <Route path="theme" element={<AdminTheme />} />
-            <Route path="seo" element={<AdminSEO />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="status" element={<AdminStatus />} />
-          </Route>
+                {/* Admin routes */}
+                <Route path="/admin/setup" element={<AdminSetup />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
+                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="home-layout" element={<AdminHomeLayout />} />
+                  <Route path="projects" element={<AdminProjects />} />
+                  <Route path="projects/:id" element={<ProjectEditor />} />
+                  <Route path="writing" element={<AdminWriting />} />
+                  <Route path="pages" element={<AdminPages />} />
+                  <Route path="theme" element={<AdminTheme />} />
+                  <Route path="seo" element={<AdminSEO />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="status" element={<AdminStatus />} />
+                </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TooltipProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
