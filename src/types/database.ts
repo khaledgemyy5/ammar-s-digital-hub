@@ -357,6 +357,7 @@ export interface WritingItem {
   order_index: number;
   why_this_matters?: string;
   show_why: boolean;
+  published_at?: string | null;
   created_at: string;
   updated_at: string;
 }
