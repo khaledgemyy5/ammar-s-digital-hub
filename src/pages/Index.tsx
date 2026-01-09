@@ -12,6 +12,7 @@ import type {
   HeroConfig, ExperienceSnapshotConfig, HowIWorkConfig, 
   FeaturedProjectsConfig, WritingPreviewConfig, ContactCTAConfig 
 } from '@/types/database';
+import { ContactConfig, migrateToContactConfig, defaultContactConfig } from '@/types/contact';
 
 const defaultSections: HomeSection[] = [
   { id: 'hero', visible: true, order: 0 },
@@ -27,6 +28,7 @@ const Index = () => {
   const [writing, setWriting] = useState<WritingItem[]>([]);
   const [sections, setSections] = useState<HomeSection[]>(defaultSections);
   const [settings, setSettings] = useState<Partial<SiteSettings> | null>(null);
+  const [contactConfig, setContactConfig] = useState<ContactConfig>(defaultContactConfig);
 
   useEffect(() => {
     trackPageView('/');
@@ -44,6 +46,16 @@ const Index = () => {
         setSettings(siteSettings);
         if (siteSettings.home_sections && Array.isArray(siteSettings.home_sections)) {
           setSections(siteSettings.home_sections as HomeSection[]);
+        }
+        
+        // Load contact config
+        if (siteSettings?.pages?.contact) {
+          const oldContact = siteSettings.pages.contact as any;
+          if (oldContact.header && oldContact.contactInfo && oldContact.ctas) {
+            setContactConfig({ ...defaultContactConfig, ...oldContact });
+          } else {
+            setContactConfig(migrateToContactConfig(oldContact));
+          }
         }
       }
     }
@@ -141,17 +153,12 @@ const Index = () => {
       }
       
       case 'contact_cta': {
-        const config = getSectionConfig<ContactCTAConfig>(id);
+        const sectionConfig = getSectionConfig<ContactCTAConfig>(id);
         return (
           <ContactCTA 
             key={id}
-            title={getSectionTitle(id, config?.headline)}
-            config={{
-              ...config,
-              email: settings?.pages?.contact?.email,
-              linkedin: settings?.pages?.contact?.linkedin,
-              calendar: settings?.pages?.contact?.calendar,
-            }}
+            title={getSectionTitle(id, sectionConfig?.headline)}
+            contactConfig={contactConfig}
           />
         );
       }
