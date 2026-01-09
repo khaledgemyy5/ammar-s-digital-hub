@@ -58,19 +58,27 @@ export function Navbar({
     >
       <div className="container-content">
         <nav className="flex items-center justify-between h-16 md:h-20">
-          {/* Mobile Menu Button - Left side */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-foreground hover:text-primary transition-colors order-first"
-            aria-label={isOpen ? 'Close menu' : 'Open menu'}
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile: Burger + Name on left */}
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 text-foreground hover:text-primary transition-colors"
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+            <Link 
+              to="/" 
+              className="font-heading text-lg font-semibold text-foreground hover:text-primary transition-colors truncate max-w-[120px] xs:max-w-[160px]"
+            >
+              {siteName}
+            </Link>
+          </div>
 
-          {/* Logo/Name */}
+          {/* Desktop: Logo/Name */}
           <Link 
             to="/" 
-            className="font-heading text-xl md:text-2xl font-semibold text-foreground hover:text-primary transition-colors"
+            className="hidden md:block font-heading text-xl md:text-2xl font-semibold text-foreground hover:text-primary transition-colors"
           >
             {siteName}
           </Link>
@@ -107,8 +115,20 @@ export function Navbar({
             )}
           </div>
 
-          {/* Spacer for mobile to balance layout */}
-          <div className="w-10 md:hidden" />
+          {/* Mobile: CTA on right (small) */}
+          <div className="md:hidden">
+            {ctaButtons && ctaButtons.filter(b => b.visible !== false).slice(0, 1).map((btn, i) => (
+              <DynamicButton key={i} config={btn} size="sm" />
+            ))}
+            {!ctaButtons && resumeEnabled && (
+              <Button asChild variant="default" size="sm" className="h-8 px-3 text-xs">
+                <Link to="/resume" className="flex items-center gap-1">
+                  <FileText className="w-3 h-3" />
+                  Resume
+                </Link>
+              </Button>
+            )}
+          </div>
         </nav>
       </div>
 
