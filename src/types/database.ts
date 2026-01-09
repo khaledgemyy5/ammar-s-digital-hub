@@ -99,14 +99,18 @@ export interface HomeSection {
   limit?: number;
 }
 
+// Navigation link type
+export type NavLinkType = 'route' | 'anchor' | 'external';
+
 // Navigation link configuration
 export interface NavLink {
   id: string;
   label: string;
   path: string;
+  type: NavLinkType;
   visible: boolean;
   order: number;
-  autoHideIfEmpty?: boolean;
+  autoHideIfEmpty?: boolean; // Auto-hide if /writing or /projects is empty
 }
 
 // Nav configuration with CTA buttons
