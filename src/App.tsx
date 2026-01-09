@@ -29,6 +29,7 @@ import AdminAnalytics from "./pages/admin/Analytics";
 import AdminStatus from "./pages/admin/Status";
 import AdminHomeLayout from "./pages/admin/HomeLayout";
 import AdminPages from "./pages/admin/Pages";
+import AdminContactSettings from "./pages/admin/ContactSettings";
 import AdminTheme from "./pages/admin/Theme";
 import AdminSEO from "./pages/admin/SEO";
 
@@ -65,6 +66,7 @@ function App() {
                   <Route path="projects/:id" element={<ProjectEditor />} />
                   <Route path="writing" element={<AdminWriting />} />
                   <Route path="pages" element={<AdminPages />} />
+                  <Route path="pages/contact" element={<AdminContactSettings />} />
                   <Route path="theme" element={<AdminTheme />} />
                   <Route path="seo" element={<AdminSEO />} />
                   <Route path="analytics" element={<AdminAnalytics />} />

@@ -14,6 +14,7 @@ interface NavbarProps {
   siteName?: string;
   hasProjects?: boolean;
   hasWriting?: boolean;
+  hasContact?: boolean;
 }
 
 // Default nav links with new order
@@ -42,6 +43,7 @@ export function Navbar({
   siteName = 'Ammar Jaber',
   hasProjects = true,
   hasWriting = true,
+  hasContact = true,
 }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -83,6 +85,9 @@ export function Navbar({
         if (link.path === '/projects' && !hasProjects) return false;
         if (link.path === '/writing' && !hasWriting) return false;
       }
+      
+      // Check contact visibility
+      if (link.path === '/contact' && !hasContact) return false;
       
       return true;
     })
