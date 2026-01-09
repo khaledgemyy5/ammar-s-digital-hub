@@ -6,9 +6,9 @@ import { HowIWork } from '@/components/sections/HowIWork';
 import { WritingPreview } from '@/components/sections/WritingPreview';
 import { ContactCTA } from '@/components/sections/ContactCTA';
 import { trackPageView } from '@/lib/analytics';
-import { getFeaturedProjects, getFeaturedWriting, getPublicSiteSettings } from '@/lib/db';
+import { getFeaturedProjects, getFeaturedWriting, getPublicSiteSettings, getWritingCategories } from '@/lib/db';
 import type { 
-  Project, WritingItem, HomeSection, SiteSettings,
+  Project, WritingItem, WritingCategory, HomeSection, SiteSettings,
   HeroConfig, FeaturedProjectsConfig, WritingPreviewConfig, ContactCTAConfig 
 } from '@/types/database';
 import { ContactConfig, migrateToContactConfig, defaultContactConfig } from '@/types/contact';
@@ -30,6 +30,7 @@ const defaultSections: HomeSection[] = [
 const Index = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [writing, setWriting] = useState<WritingItem[]>([]);
+  const [writingCategories, setWritingCategories] = useState<WritingCategory[]>([]);
   const [sections, setSections] = useState<HomeSection[]>(defaultSections);
   const [settings, setSettings] = useState<Partial<SiteSettings> | null>(null);
   const [contactConfig, setContactConfig] = useState<ContactConfig>(defaultContactConfig);
@@ -40,14 +41,16 @@ const Index = () => {
     trackPageView('/');
     
     async function loadData() {
-      const [projectsData, writingData, siteSettings] = await Promise.all([
+      const [projectsData, writingData, siteSettings, writingCats] = await Promise.all([
         getFeaturedProjects(3),
         getFeaturedWriting(3),
-        getPublicSiteSettings()
+        getPublicSiteSettings(),
+        getWritingCategories()
       ]);
       
       setProjects(projectsData);
       setWriting(writingData);
+      setWritingCategories(writingCats);
       if (siteSettings) {
         setSettings(siteSettings);
         if (siteSettings.home_sections && Array.isArray(siteSettings.home_sections)) {
@@ -168,6 +171,7 @@ const Index = () => {
           <WritingPreview 
             key={id} 
             items={writing.slice(0, limit)} 
+            categories={writingCategories}
             title={getSectionTitle(id, 'Selected Writing')} 
           />
         );
