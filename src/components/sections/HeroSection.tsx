@@ -157,7 +157,10 @@ export function HeroSection({
 
           {/* Headline */}
           <h1 className="mb-4 text-balance">
-            Hi, I'm <span className="text-primary">{heroConfig.name}</span>
+            {(heroConfig.showGreeting !== false) && (
+              <>{heroConfig.greetingText || "Hi, I'm"} </>
+            )}
+            <span className="text-primary">{heroConfig.name}</span>
           </h1>
 
           {/* Transition Line (optional) */}

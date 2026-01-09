@@ -35,6 +35,8 @@ export interface HeroConfig {
   introLine2?: string;
   badges?: string[];
   ctas: ButtonConfig[];
+  showGreeting?: boolean;
+  greetingText?: string;
 }
 
 export interface ExperienceItem {

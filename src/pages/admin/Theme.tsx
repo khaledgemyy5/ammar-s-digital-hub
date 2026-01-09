@@ -23,6 +23,7 @@ const modes = [
 
 const presetColors = [
   { value: '#135BEC', label: 'Blue' },
+  { value: '#0B1F3B', label: 'Navy' },
   { value: '#10B981', label: 'Green' },
   { value: '#8B5CF6', label: 'Purple' },
   { value: '#F59E0B', label: 'Amber' },
