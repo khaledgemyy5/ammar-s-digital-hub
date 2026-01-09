@@ -31,10 +31,11 @@ export function clearCache(): void {
 
 // Default configurations for when database is not available
 const defaultNavConfig: NavLink[] = [
-  { id: 'home', label: 'Home', path: '/', visible: true, order: 0 },
-  { id: 'projects', label: 'Projects', path: '/projects', visible: true, order: 1 },
-  { id: 'writing', label: 'Writing', path: '/writing', visible: true, order: 2 },
-  { id: 'contact', label: 'Contact', path: '/contact', visible: true, order: 3 },
+  { id: 'home', label: 'Home', path: '/', type: 'route', visible: true, order: 0 },
+  { id: 'resume', label: 'Resume', path: '/resume', type: 'route', visible: true, order: 1 },
+  { id: 'projects', label: 'Projects', path: '/projects', type: 'route', visible: true, order: 2, autoHideIfEmpty: true },
+  { id: 'writing', label: 'Selected Writing', path: '/writing', type: 'route', visible: true, order: 3, autoHideIfEmpty: true },
+  { id: 'how-i-work', label: 'How I Work', path: '/#how-i-work', type: 'anchor', visible: true, order: 4 },
 ];
 
 const defaultHomeSections: HomeSection[] = [
