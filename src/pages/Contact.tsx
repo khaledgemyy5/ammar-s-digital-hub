@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Linkedin, Calendar, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SupabaseStatus } from '@/components/ui/SupabaseStatus';
 import { getPublicSiteSettings } from '@/lib/db';
 import { trackPageView, trackContactClick } from '@/lib/analytics';
+import { DynamicButton } from '@/components/ui/DynamicButton';
+import type { ButtonConfig } from '@/types/database';
 
 export default function Contact() {
   const [email, setEmail] = useState<string | null>(null);
   const [linkedin, setLinkedin] = useState<string | null>(null);
   const [calendar, setCalendar] = useState<string | null>(null);
+  const [buttons, setButtons] = useState<ButtonConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [enabled, setEnabled] = useState(true);
 
@@ -23,6 +25,7 @@ export default function Contact() {
         setEmail(settings.pages.contact.email || null);
         setLinkedin(settings.pages.contact.linkedin || null);
         setCalendar(settings.pages.contact.calendar || null);
+        setButtons(settings.pages.contact.buttons || []);
       }
       setLoading(false);
     });
@@ -147,8 +150,17 @@ export default function Contact() {
               </a>
             )}
 
+            {/* Custom CTA Buttons */}
+            {buttons.length > 0 && (
+              <div className="flex flex-wrap gap-3 pt-4">
+                {buttons.filter(b => b.visible !== false).map((btn, i) => (
+                  <DynamicButton key={i} config={btn} />
+                ))}
+              </div>
+            )}
+
             {/* Empty State */}
-            {!email && !linkedin && !calendar && (
+            {!email && !linkedin && !calendar && buttons.length === 0 && (
               <div className="text-center py-12 border border-dashed border-border rounded-lg">
                 <p className="text-muted-foreground">
                   Contact information will appear here once configured.

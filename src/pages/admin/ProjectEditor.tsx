@@ -398,22 +398,121 @@ export default function ProjectEditor() {
 
         {/* Sections Tab */}
         <TabsContent value="sections">
-          <Card>
-            <CardHeader>
-              <CardTitle>Section Visibility</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {sections.sort((a, b) => a.order - b.order).map(section => (
-                <div key={section.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <span>{sectionLabels[section.id] || section.id}</span>
-                  <Switch
-                    checked={section.visible}
-                    onCheckedChange={(checked) => updateSection(section.id, { visible: checked })}
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Standard Sections</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {sections.sort((a, b) => a.order - b.order).map(section => (
+                  <div key={section.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <Input
+                        value={section.titleOverride || ''}
+                        onChange={(e) => updateSection(section.id, { titleOverride: e.target.value || undefined })}
+                        placeholder={sectionLabels[section.id] || section.id}
+                        className="text-sm"
+                      />
+                    </div>
+                    <Switch
+                      checked={section.visible}
+                      onCheckedChange={(checked) => updateSection(section.id, { visible: checked })}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Custom Sections */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom Sections (max 2)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(content.custom_sections || []).map((cs: any, idx: number) => (
+                  <div key={cs.id || idx} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Input
+                        value={cs.title || ''}
+                        onChange={(e) => {
+                          const updated = [...(content.custom_sections || [])];
+                          updated[idx] = { ...updated[idx], title: e.target.value };
+                          updateContent('custom_sections', updated);
+                        }}
+                        placeholder="Section Title"
+                      />
+                      <Select
+                        value={cs.kind || 'text'}
+                        onValueChange={(v: 'text' | 'bullets') => {
+                          const updated = [...(content.custom_sections || [])];
+                          updated[idx] = { ...updated[idx], kind: v };
+                          updateContent('custom_sections', updated);
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Text</SelectItem>
+                          <SelectItem value="bullets">Bullets</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const updated = (content.custom_sections || []).filter((_: any, i: number) => i !== idx);
+                          updateContent('custom_sections', updated);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                    {cs.kind === 'bullets' ? (
+                      <Textarea
+                        value={(cs.bullets || []).join('\n')}
+                        onChange={(e) => {
+                          const updated = [...(content.custom_sections || [])];
+                          updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(Boolean) };
+                          updateContent('custom_sections', updated);
+                        }}
+                        placeholder="One bullet per line..."
+                        rows={4}
+                      />
+                    ) : (
+                      <Textarea
+                        value={cs.content || ''}
+                        onChange={(e) => {
+                          const updated = [...(content.custom_sections || [])];
+                          updated[idx] = { ...updated[idx], content: e.target.value };
+                          updateContent('custom_sections', updated);
+                        }}
+                        placeholder="Section content..."
+                        rows={4}
+                      />
+                    )}
+                  </div>
+                ))}
+                {(content.custom_sections || []).length < 2 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const newSection = {
+                        id: `custom_${Date.now()}`,
+                        title: '',
+                        kind: 'text',
+                        content: ''
+                      };
+                      updateContent('custom_sections', [...(content.custom_sections || []), newSection]);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Custom Section
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Content Tab */}

@@ -1,12 +1,14 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { NavLink as NavLinkType } from '@/types/database';
+import type { NavLink as NavLinkType, ButtonConfig } from '@/types/database';
+import { DynamicButton } from '@/components/ui/DynamicButton';
 
 interface NavbarProps {
   navLinks?: NavLinkType[];
+  ctaButtons?: ButtonConfig[];
   resumeEnabled?: boolean;
   siteName?: string;
 }
@@ -20,9 +22,11 @@ const defaultLinks: NavLinkType[] = [
 
 export function Navbar({ 
   navLinks = defaultLinks, 
+  ctaButtons,
   resumeEnabled = true,
   siteName = 'Ammar Jaber'
 }: NavbarProps) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -81,7 +85,10 @@ export function Navbar({
               ))}
             </ul>
 
-            {resumeEnabled && (
+            {ctaButtons && ctaButtons.filter(b => b.visible !== false).map((btn, i) => (
+              <DynamicButton key={i} config={btn} size="sm" />
+            ))}
+            {!ctaButtons && resumeEnabled && (
               <Button asChild variant="default" size="sm">
                 <Link to="/resume" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -128,7 +135,12 @@ export function Navbar({
                     </Link>
                   </li>
                 ))}
-                {resumeEnabled && (
+                {ctaButtons && ctaButtons.filter(b => b.visible !== false).map((btn, i) => (
+                  <li key={i} className="pt-2">
+                    <DynamicButton config={btn} className="w-full" />
+                  </li>
+                ))}
+                {!ctaButtons && resumeEnabled && (
                   <li className="pt-2">
                     <Button asChild variant="default" className="w-full">
                       <Link to="/resume" className="flex items-center justify-center gap-2">
