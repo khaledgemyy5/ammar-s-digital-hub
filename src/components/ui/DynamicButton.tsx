@@ -6,11 +6,12 @@ import type { ButtonConfig } from '@/types/database';
 interface DynamicButtonProps {
   config: ButtonConfig;
   className?: string;
+  size?: 'default' | 'sm' | 'lg' | 'icon';
   onClick?: () => void;
 }
 
-export function DynamicButton({ config, className, onClick }: DynamicButtonProps) {
-  if (!config.visible) return null;
+export function DynamicButton({ config, className, size = 'default', onClick }: DynamicButtonProps) {
+  if (config.visible === false) return null;
 
   const getVariant = () => {
     switch (config.variant) {
@@ -58,6 +59,7 @@ export function DynamicButton({ config, className, onClick }: DynamicButtonProps
     return (
       <Button
         variant={getVariant()}
+        size={size}
         className={className}
         asChild
         onClick={handleClick}
@@ -75,6 +77,7 @@ export function DynamicButton({ config, className, onClick }: DynamicButtonProps
     return (
       <Button
         variant={getVariant()}
+        size={size}
         className={className}
         asChild
         onClick={handleClick}
@@ -92,6 +95,7 @@ export function DynamicButton({ config, className, onClick }: DynamicButtonProps
     return (
       <Button
         variant={getVariant()}
+        size={size}
         className={className}
         asChild
         onClick={handleClick}
@@ -109,6 +113,7 @@ export function DynamicButton({ config, className, onClick }: DynamicButtonProps
     return (
       <Button
         variant={getVariant()}
+        size={size}
         className={className}
         asChild
         onClick={handleClick}
@@ -125,6 +130,7 @@ export function DynamicButton({ config, className, onClick }: DynamicButtonProps
   return (
     <Button
       variant={getVariant()}
+      size={size}
       className={className}
       onClick={handleClick}
     >

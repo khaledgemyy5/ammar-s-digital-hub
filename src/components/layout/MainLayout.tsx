@@ -3,7 +3,7 @@ import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { useEffect, useState } from 'react';
 import { getPublicSiteSettings, getWritingItems, getPublishedProjects } from '@/lib/db';
-import type { SiteSettings, NavLink } from '@/types/database';
+import type { SiteSettings, NavLink, ButtonConfig, NavConfig } from '@/types/database';
 
 export function MainLayout() {
   const [settings, setSettings] = useState<Partial<SiteSettings> | null>(null);
@@ -27,18 +27,32 @@ export function MainLayout() {
     loadSettings();
   }, []);
 
+  // Get nav config - could be array or object
+  const getNavConfig = () => {
+    const config = settings?.nav_config;
+    if (!config) return { links: undefined, ctaButtons: undefined };
+    
+    // Check if it's a NavConfig object or array
+    if (Array.isArray(config)) {
+      return { links: config as NavLink[], ctaButtons: undefined };
+    }
+    
+    const navConfig = config as NavConfig;
+    return {
+      links: navConfig.links,
+      ctaButtons: navConfig.ctaButtons
+    };
+  };
+
   // Filter nav links based on content availability
   const getFilteredNavLinks = (): NavLink[] | undefined => {
-    const navLinks = (settings?.nav_config as NavLink[]) || undefined;
-    if (!navLinks) return undefined;
+    const { links } = getNavConfig();
+    if (!links) return undefined;
     
-    return navLinks.map(link => {
-      // Auto-hide Writing if no items
+    return links.map(link => {
       if (link.path === '/writing' && !hasWriting) {
         return { ...link, visible: false };
       }
-      // Auto-hide Projects if no items (optional, usually keep visible)
-      // Auto-hide Contact if disabled
       if (link.path === '/contact' && settings?.pages?.contact?.enabled === false) {
         return { ...link, visible: false };
       }
@@ -46,12 +60,14 @@ export function MainLayout() {
     });
   };
 
+  const { ctaButtons } = getNavConfig();
   const resumeEnabled = settings?.pages?.resume?.enabled ?? true;
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar 
         navLinks={getFilteredNavLinks()} 
+        ctaButtons={ctaButtons}
         resumeEnabled={resumeEnabled}
         siteName="Ammar Jaber"
       />
