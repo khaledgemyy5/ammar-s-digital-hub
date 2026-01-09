@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { adminGetSiteSettings, adminUpdateSiteSettings, clearCache } from '@/lib/db';
-import type { PageConfig } from '@/types/database';
+import type { PageConfig, ButtonConfig } from '@/types/database';
 
 const defaultPages: PageConfig = {
   resume: { enabled: true, showCopyText: true, showDownload: true },
-  contact: { enabled: true },
+  contact: { enabled: true, buttons: [] },
 };
 
 export default function AdminPages() {
@@ -26,7 +27,7 @@ export default function AdminPages() {
   const loadData = async () => {
     const settings = await adminGetSiteSettings();
     if (settings?.pages) {
-      setPages(settings.pages as PageConfig);
+      setPages({ ...defaultPages, ...(settings.pages as PageConfig) });
     }
     setLoading(false);
   };
@@ -47,6 +48,30 @@ export default function AdminPages() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Contact buttons management
+  const addContactButton = () => {
+    const buttons = pages.contact.buttons || [];
+    const newButton: ButtonConfig = {
+      label: 'New Button',
+      actionType: 'external',
+      target: '',
+      variant: 'secondary',
+      visible: true,
+    };
+    setPages({ ...pages, contact: { ...pages.contact, buttons: [...buttons, newButton] } });
+  };
+
+  const updateContactButton = (index: number, updates: Partial<ButtonConfig>) => {
+    const buttons = [...(pages.contact.buttons || [])];
+    buttons[index] = { ...buttons[index], ...updates };
+    setPages({ ...pages, contact: { ...pages.contact, buttons } });
+  };
+
+  const removeContactButton = (index: number) => {
+    const buttons = (pages.contact.buttons || []).filter((_, i) => i !== index);
+    setPages({ ...pages, contact: { ...pages.contact, buttons } });
   };
 
   if (loading) {
@@ -138,7 +163,7 @@ export default function AdminPages() {
         <Card>
           <CardHeader>
             <CardTitle>Contact Page</CardTitle>
-            <CardDescription>Configure contact information and links</CardDescription>
+            <CardDescription>Configure contact information and CTA buttons</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -192,6 +217,68 @@ export default function AdminPages() {
               <p className="text-xs text-muted-foreground mt-1">
                 Optional: Add a calendar booking link (Calendly, Cal.com, etc.)
               </p>
+            </div>
+
+            {/* Custom Buttons */}
+            <div>
+              <Label>Custom CTA Buttons</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Add additional buttons to the contact page
+              </p>
+              <div className="space-y-2">
+                {(pages.contact.buttons || []).map((btn, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                    <Input
+                      value={btn.label}
+                      onChange={(e) => updateContactButton(idx, { label: e.target.value })}
+                      placeholder="Label"
+                      className="w-28 h-8 text-sm"
+                    />
+                    <Select 
+                      value={btn.actionType} 
+                      onValueChange={(v) => updateContactButton(idx, { actionType: v as any })}
+                    >
+                      <SelectTrigger className="w-28 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="external">External URL</SelectItem>
+                        <SelectItem value="internal">Internal Page</SelectItem>
+                        <SelectItem value="mailto">Email</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={btn.target}
+                      onChange={(e) => updateContactButton(idx, { target: e.target.value })}
+                      placeholder="URL or path"
+                      className="flex-1 h-8 text-sm"
+                    />
+                    <Select 
+                      value={btn.variant || 'secondary'} 
+                      onValueChange={(v) => updateContactButton(idx, { variant: v as any })}
+                    >
+                      <SelectTrigger className="w-24 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">Primary</SelectItem>
+                        <SelectItem value="secondary">Secondary</SelectItem>
+                        <SelectItem value="outline">Outline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Switch
+                      checked={btn.visible}
+                      onCheckedChange={(checked) => updateContactButton(idx, { visible: checked })}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeContactButton(idx)} className="h-8 w-8">
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addContactButton}>
+                  <Plus className="w-4 h-4 mr-1" /> Add Button
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

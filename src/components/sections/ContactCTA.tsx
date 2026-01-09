@@ -3,23 +3,31 @@ import { Button } from '@/components/ui/button';
 import { Mail, Linkedin, Calendar } from 'lucide-react';
 import { trackContactClick } from '@/lib/analytics';
 
-interface ContactCTAProps {
-  title?: string;
-  subtitle?: string;
+interface ContactCTAConfig {
+  headline?: string;
+  body?: string;
   email?: string;
   linkedin?: string;
   calendar?: string;
 }
 
+interface ContactCTAProps {
+  title?: string;
+  config?: ContactCTAConfig;
+}
+
 export function ContactCTA({
-  title = "Let's Work Together",
-  subtitle = "I'm always open to discussing product management opportunities, interesting projects, or just having a conversation about tech and product strategy.",
-  email = 'hello@ammarjaber.com',
-  linkedin = 'https://linkedin.com/in/ammarjaber',
-  calendar = 'https://calendly.com/ammarjaber'
+  title,
+  config
 }: ContactCTAProps) {
+  const headline = title || config?.headline || "Let's Work Together";
+  const body = config?.body || "I'm always open to discussing product management opportunities, interesting projects, or just having a conversation about tech and product strategy.";
+  const email = config?.email || 'hello@ammarjaber.com';
+  const linkedin = config?.linkedin || 'https://linkedin.com/in/ammarjaber';
+  const calendar = config?.calendar || 'https://calendly.com/ammarjaber';
+
   return (
-    <section className="section-spacing bg-primary text-primary-foreground">
+    <section id="contact-cta" className="section-spacing bg-primary text-primary-foreground">
       <div className="container-content">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -27,9 +35,9 @@ export function ContactCTA({
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto"
         >
-          <h2 className="text-3xl md:text-4xl mb-6">{title}</h2>
+          <h2 className="text-3xl md:text-4xl mb-6">{headline}</h2>
           <p className="text-lg opacity-90 mb-10">
-            {subtitle}
+            {body}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

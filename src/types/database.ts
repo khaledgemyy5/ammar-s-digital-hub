@@ -16,7 +16,7 @@ export type ButtonActionType = 'internal' | 'external' | 'download' | 'mailto' |
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline';
 
 export interface ButtonConfig {
-  id: string;
+  id?: string;
   label: string;
   visible: boolean;
   actionType: ButtonActionType;
