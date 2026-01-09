@@ -1,7 +1,5 @@
-import { motion } from 'framer-motion';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
 import { trackWritingClick } from '@/lib/analytics';
 import type { WritingItem } from '@/types/database';
 
@@ -10,99 +8,87 @@ interface WritingPreviewProps {
   items?: WritingItem[];
 }
 
-// Demo items for when no data is available
-const demoItems: Partial<WritingItem>[] = [
-  {
-    id: '1',
-    title: 'Building LLM-Powered Features: A Product Manager Guide',
-    url: 'https://medium.com/example',
-    platform_label: 'Medium',
-    language: 'EN',
-    featured: true,
-  },
-  {
-    id: '2',
-    title: 'The Art of Technical Product Management',
-    url: 'https://blog.example.com',
-    platform_label: 'Personal Blog',
-    language: 'EN',
-    featured: true,
-  },
-  {
-    id: '3',
-    title: 'كيف تبني منتجات تقنية ناجحة',
-    url: 'https://arabic-platform.com',
-    platform_label: 'Arabic Platform',
-    language: 'AR',
-    featured: true,
-  },
-];
-
 export function WritingPreview({
   title = 'Selected Writing',
-  items = demoItems as WritingItem[]
+  items = []
 }: WritingPreviewProps) {
-  const displayItems = items.length > 0 ? items : demoItems;
+  // Auto-hide if no items
+  if (!items || items.length === 0) {
+    return null;
+  }
+
+  // Show max 3 items, sorted by featured first then order_index
+  const displayItems = [...items]
+    .sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return (a.order_index || 0) - (b.order_index || 0);
+    })
+    .slice(0, 3);
 
   const handleClick = (url: string) => {
     trackWritingClick(url);
   };
 
+  const getLanguageDir = (lang: WritingItem['language']): 'rtl' | 'ltr' => {
+    return lang === 'AR' ? 'rtl' : 'ltr';
+  };
+
   return (
     <section className="section-spacing">
       <div className="container-content">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="text-2xl md:text-3xl">{title}</h2>
+        {/* Header with View all link */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl">{title}</h2>
           <Link 
             to="/writing" 
-            className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
           >
-            All Writing
-            <ArrowRight className="w-4 h-4" />
+            View all
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
 
-        <div className="space-y-4">
-          {displayItems.slice(0, 3).map((item, index) => (
-            <motion.a
-              key={item.id || index}
+        {/* One-line rows */}
+        <div className="divide-y divide-border/50">
+          {displayItems.map((item) => (
+            <a
+              key={item.id}
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleClick(item.url || '')}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="group flex items-center justify-between p-4 md:p-5 border border-border rounded-lg bg-card hover:border-primary/30 hover:bg-accent/30 transition-all duration-300"
+              className="group flex items-center justify-between py-3 hover:bg-muted/30 -mx-2 px-2 rounded transition-colors"
             >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* Title with RTL support */}
-                <span 
-                  className="font-medium group-hover:text-primary transition-colors truncate"
-                  dir={item.language === 'AR' ? 'rtl' : 'ltr'}
-                >
-                  {item.title}
-                </span>
-              </div>
+              {/* Title - truncated, RTL aware */}
+              <span 
+                className="flex-1 min-w-0 truncate font-medium group-hover:text-primary transition-colors"
+                dir={getLanguageDir(item.language)}
+              >
+                {item.title}
+              </span>
 
-              <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-                {/* Language Badge */}
-                {item.language && item.language !== 'AUTO' && (
-                  <Badge variant="outline" className="text-xs">
-                    {item.language}
-                  </Badge>
-                )}
-
-                {/* Platform */}
-                <span className="text-sm text-muted-foreground hidden sm:inline">
+              {/* Right side: Platform + Language + Arrow */}
+              <span className="flex items-center gap-2 flex-shrink-0 ml-4 text-muted-foreground">
+                {/* Platform label */}
+                <span className="text-sm hidden sm:inline">
                   {item.platform_label}
                 </span>
-
-                {/* External Link Icon */}
-                <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </motion.a>
+                <span className="text-xs sm:hidden">
+                  {item.platform_label?.slice(0, 8)}
+                </span>
+                
+                {/* Language badge - tiny */}
+                {item.language && item.language !== 'AUTO' && (
+                  <span className="text-[10px] uppercase tracking-wider opacity-60">
+                    {item.language}
+                  </span>
+                )}
+                
+                {/* Arrow */}
+                <ArrowUpRight className="w-4 h-4 group-hover:text-primary transition-colors" />
+              </span>
+            </a>
           ))}
         </div>
       </div>

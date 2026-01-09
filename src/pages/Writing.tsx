@@ -1,13 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { ExternalLink, Star, Globe } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ArrowUpRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SupabaseStatus } from '@/components/ui/SupabaseStatus';
 import { getWritingCategories, getWritingItems } from '@/lib/db';
 import { trackPageView, trackWritingClick } from '@/lib/analytics';
 import type { WritingCategory, WritingItem } from '@/types/database';
+import { cn } from '@/lib/utils';
 
 export default function Writing() {
   const [categories, setCategories] = useState<WritingCategory[]>([]);
@@ -22,8 +20,14 @@ export default function Writing() {
       getWritingCategories(),
       getWritingItems()
     ]).then(([cats, itms]) => {
-      setCategories(cats);
-      setItems(itms);
+      // Sort categories by order_index
+      setCategories(cats.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)));
+      // Sort items: featured first, then by order_index
+      setItems(itms.sort((a, b) => {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        return (a.order_index || 0) - (b.order_index || 0);
+      }));
       setLoading(false);
     });
   }, []);
@@ -33,85 +37,68 @@ export default function Writing() {
     return items.filter(item => item.category_id === activeCategory);
   }, [items, activeCategory]);
 
-  const getLanguageDir = (lang: WritingItem['language']): 'rtl' | 'ltr' | 'auto' => {
-    if (lang === 'AR') return 'rtl';
-    if (lang === 'EN') return 'ltr';
-    return 'auto';
+  const getLanguageDir = (lang: WritingItem['language']): 'rtl' | 'ltr' => {
+    return lang === 'AR' ? 'rtl' : 'ltr';
   };
 
   const handleItemClick = (url: string) => {
     trackWritingClick(url);
   };
 
-  const getCategoryName = (categoryId: string | null | undefined) => {
-    if (!categoryId) return 'Uncategorized';
-    const cat = categories.find(c => c.id === categoryId);
-    return cat?.name || 'Uncategorized';
-  };
-
   return (
     <div className="section-spacing">
       <div className="container-content">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
-        >
-          <h1 className="mb-4">Selected Writing</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl">
-            Articles, essays, and thoughts on product management, AI/LLM development, 
-            startups, and technology.
+        <div className="mb-8">
+          <h1 className="mb-2">Selected Writing</h1>
+          <p className="text-muted-foreground">
+            Articles on product, AI, and technology.
           </p>
-        </motion.div>
+        </div>
 
         {/* Supabase Status Banner */}
-        <div className="mb-8">
+        <div className="mb-6">
           <SupabaseStatus />
         </div>
 
-        {/* Category Filter */}
-        {categories.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-wrap gap-2 mb-10"
-          >
-            <Button
-              variant={!activeCategory ? 'default' : 'outline'}
-              size="sm"
+        {/* Tabs - Scrollable on mobile */}
+        <div className="mb-8 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-1 min-w-max">
+            <button
               onClick={() => setActiveCategory(null)}
-              className="rounded-full"
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap",
+                !activeCategory
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
             >
               All
-            </Button>
+            </button>
             {categories.map((cat) => (
-              <Button
+              <button
                 key={cat.id}
-                variant={activeCategory === cat.id ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setActiveCategory(cat.id)}
-                className="rounded-full"
+                className={cn(
+                  "px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap",
+                  activeCategory === cat.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
               >
                 {cat.name}
-              </Button>
+              </button>
             ))}
-          </motion.div>
-        )}
+          </div>
+        </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="p-5 border border-border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <Skeleton className="h-5 w-3/4 mb-2" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
+          <div className="space-y-0 divide-y divide-border">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="py-3 flex items-center justify-between">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-16" />
               </div>
             ))}
           </div>
@@ -119,90 +106,52 @@ export default function Writing() {
 
         {/* Empty State */}
         {!loading && filteredItems.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16 border border-dashed border-border rounded-lg"
-          >
-            <Globe className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-2">No writing found</p>
-            <p className="text-sm text-muted-foreground">
-              {activeCategory 
-                ? 'No articles match this category.'
-                : 'Articles will appear here once added to the database.'
-              }
-            </p>
-          </motion.div>
+          <div className="py-12 text-center text-muted-foreground">
+            No items in this category
+          </div>
         )}
 
-        {/* Writing Items List */}
+        {/* Writing Items - One-line rows */}
         {!loading && filteredItems.length > 0 && (
-          <div className="space-y-4">
-            {filteredItems.map((item, index) => (
-              <motion.a
+          <div className="divide-y divide-border/50">
+            {filteredItems.map((item) => (
+              <a
                 key={item.id}
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleItemClick(item.url)}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="group flex items-start md:items-center justify-between p-5 border border-border rounded-lg bg-card hover:border-primary/30 hover:bg-accent/30 transition-all duration-300"
+                className="group flex items-center justify-between py-3 hover:bg-muted/30 -mx-2 px-2 rounded transition-colors"
               >
-                <div className="flex-1 min-w-0 pr-4">
-                  {/* Title with RTL support */}
-                  <h3 
-                    className="font-medium text-lg group-hover:text-primary transition-colors mb-2"
-                    dir={getLanguageDir(item.language)}
-                  >
-                    {item.title}
-                  </h3>
+                {/* Title - truncated, RTL aware */}
+                <span 
+                  className="flex-1 min-w-0 truncate font-medium group-hover:text-primary transition-colors"
+                  dir={getLanguageDir(item.language)}
+                >
+                  {item.title}
+                </span>
+
+                {/* Right side: Platform + Language + Arrow */}
+                <span className="flex items-center gap-2 flex-shrink-0 ml-4 text-muted-foreground">
+                  {/* Platform label */}
+                  <span className="text-sm hidden sm:inline">
+                    {item.platform_label}
+                  </span>
+                  <span className="text-xs sm:hidden">
+                    {item.platform_label?.slice(0, 8)}
+                  </span>
                   
-                  {/* Why This Matters */}
-                  {item.show_why && item.why_this_matters && (
-                    <p 
-                      className="text-sm text-muted-foreground mb-3 line-clamp-2"
-                      dir={getLanguageDir(item.language)}
-                    >
-                      {item.why_this_matters}
-                    </p>
-                  )}
-
-                  {/* Meta Row */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {/* Category */}
-                    {!activeCategory && (
-                      <span className="text-sm text-muted-foreground">
-                        {getCategoryName(item.category_id)}
-                      </span>
-                    )}
-                    
-                    {/* Platform */}
-                    <span className="text-sm text-muted-foreground">
-                      {item.platform_label}
+                  {/* Language badge - tiny */}
+                  {item.language && item.language !== 'AUTO' && (
+                    <span className="text-[10px] uppercase tracking-wider opacity-60">
+                      {item.language}
                     </span>
-
-                    {/* Language Badge */}
-                    {item.language && item.language !== 'AUTO' && (
-                      <Badge variant="outline" className="text-xs">
-                        {item.language}
-                      </Badge>
-                    )}
-
-                    {/* Featured Badge */}
-                    {item.featured && (
-                      <Badge className="badge-featured flex items-center gap-1 text-xs">
-                        <Star className="w-3 h-3" />
-                        Featured
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* External Link Icon */}
-                <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-              </motion.a>
+                  )}
+                  
+                  {/* Arrow */}
+                  <ArrowUpRight className="w-4 h-4 group-hover:text-primary transition-colors" />
+                </span>
+              </a>
             ))}
           </div>
         )}
