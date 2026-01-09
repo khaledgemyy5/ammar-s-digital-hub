@@ -2,25 +2,39 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SupabaseStatus } from '@/components/ui/SupabaseStatus';
-import { getWritingItems, getWritingCategories } from '@/lib/db';
+import { getWritingItems, getWritingCategories, getPublicSiteSettings } from '@/lib/db';
 import { trackPageView, trackWritingClick } from '@/lib/analytics';
 import type { WritingItem, WritingCategory } from '@/types/database';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+
+interface WritingPageSettings {
+  pageTitle: string;
+  introText: string;
+  enablePage: boolean;
+  autoHideIfEmpty: boolean;
+}
 
 export default function Writing() {
   const [items, setItems] = useState<WritingItem[]>([]);
   const [categories, setCategories] = useState<WritingCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [pageSettings, setPageSettings] = useState<WritingPageSettings>({
+    pageTitle: 'Selected Writing',
+    introText: 'Articles on product, AI, and technology.',
+    enablePage: true,
+    autoHideIfEmpty: true,
+  });
 
   useEffect(() => {
     trackPageView('/writing');
     
     Promise.all([
       getWritingItems(),
-      getWritingCategories()
-    ]).then(([itms, cats]) => {
+      getWritingCategories(),
+      getPublicSiteSettings()
+    ]).then(([itms, cats, settings]) => {
       // Sort items: featured first, then by published_at (newest), then order_index
       const sorted = itms.sort((a, b) => {
         if (a.featured && !b.featured) return -1;
@@ -34,6 +48,18 @@ export default function Writing() {
       });
       setItems(sorted);
       setCategories(cats);
+      
+      // Load page settings
+      if (settings?.pages && (settings.pages as any).writing) {
+        const w = (settings.pages as any).writing;
+        setPageSettings({
+          pageTitle: w.pageTitle || 'Selected Writing',
+          introText: w.introText || '',
+          enablePage: w.enablePage !== false,
+          autoHideIfEmpty: w.autoHideIfEmpty !== false,
+        });
+      }
+      
       setLoading(false);
     });
   }, []);
@@ -65,10 +91,12 @@ export default function Writing() {
       <div className="container-content">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="mb-2">Selected Writing</h1>
-          <p className="text-muted-foreground">
-            Articles on product, AI, and technology.
-          </p>
+          <h1 className="mb-2">{pageSettings.pageTitle}</h1>
+          {pageSettings.introText && (
+            <p className="text-muted-foreground">
+              {pageSettings.introText}
+            </p>
+          )}
         </div>
 
         {/* Supabase Status Banner */}
@@ -142,8 +170,9 @@ export default function Writing() {
         {!loading && filteredItems.length > 0 && (
           <div className="divide-y divide-border/30">
             {filteredItems.map((item) => {
+              const categoryName = categories.find(c => c.id === item.category_id)?.name;
               const dateStr = formatDate(item.published_at);
-              const meta = [dateStr, item.platform_label].filter(Boolean).join(' • ');
+              const meta = [categoryName, dateStr, item.platform_label].filter(Boolean).join(' • ');
               
               return (
                 <a

@@ -33,8 +33,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
-import { getAllWritingCategories, getAllWritingItems, clearCache } from '@/lib/db';
-import type { WritingCategory, WritingItem, Language } from '@/types/database';
+import { getAllWritingCategories, getAllWritingItems, clearCache, adminGetSiteSettings, adminUpdateSiteSettings } from '@/lib/db';
+import type { WritingCategory, WritingItem, Language, SiteSettings } from '@/types/database';
+
+// Page settings interface
+interface WritingPageSettings {
+  pageTitle: string;
+  introText: string;
+  enablePage: boolean;
+  autoHideIfEmpty: boolean;
+}
 
 // Type fix for nullable fields from database
 type WritingItemFromDB = Omit<WritingItem, 'category_id' | 'published_at'> & { category_id: string | null; published_at: string | null };
@@ -44,6 +52,15 @@ export default function AdminWriting() {
   const [items, setItems] = useState<WritingItemFromDB[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  
+  // Page settings
+  const [pageSettings, setPageSettings] = useState<WritingPageSettings>({
+    pageTitle: 'Selected Writing',
+    introText: 'Articles on product, AI, and technology.',
+    enablePage: true,
+    autoHideIfEmpty: true,
+  });
   
   // Category editing
   const [editingCategory, setEditingCategory] = useState<WritingCategory | null>(null);
@@ -72,12 +89,26 @@ export default function AdminWriting() {
   const [search, setSearch] = useState('');
 
   const loadData = async () => {
-    const [cats, itms] = await Promise.all([
+    const [cats, itms, settings] = await Promise.all([
       getAllWritingCategories(),
       getAllWritingItems(),
+      adminGetSiteSettings(),
     ]);
     setCategories(cats);
     setItems(itms as WritingItemFromDB[]);
+    setSiteSettings(settings);
+    
+    // Load page settings from site_settings.pages.writing
+    if (settings?.pages && (settings.pages as any).writing) {
+      const w = (settings.pages as any).writing;
+      setPageSettings({
+        pageTitle: w.pageTitle || 'Selected Writing',
+        introText: w.introText || '',
+        enablePage: w.enablePage !== false,
+        autoHideIfEmpty: w.autoHideIfEmpty !== false,
+      });
+    }
+    
     setLoading(false);
   };
 
@@ -292,6 +323,30 @@ export default function AdminWriting() {
     setDeleteItem(null);
   };
 
+  const savePageSettings = async () => {
+    if (!siteSettings) return;
+    
+    setSaving(true);
+    try {
+      const updatedPages = {
+        ...siteSettings.pages,
+        writing: pageSettings,
+      };
+      
+      const success = await adminUpdateSiteSettings({ pages: updatedPages });
+      if (success) {
+        clearCache();
+        toast.success('Page settings saved');
+      } else {
+        toast.error('Failed to save page settings');
+      }
+    } catch {
+      toast.error('Failed to save page settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const filteredItems = items.filter(item =>
     item.title.toLowerCase().includes(search.toLowerCase())
   );
@@ -320,6 +375,7 @@ export default function AdminWriting() {
         <TabsList>
           <TabsTrigger value="items">Items ({items.length})</TabsTrigger>
           <TabsTrigger value="categories">Categories ({categories.length})</TabsTrigger>
+          <TabsTrigger value="settings">Page Settings</TabsTrigger>
         </TabsList>
 
         {/* Items Tab */}
@@ -431,6 +487,59 @@ export default function AdminWriting() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Page Settings Tab */}
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle>Writing Page Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4">
+                <div>
+                  <Label>Page Title</Label>
+                  <Input
+                    value={pageSettings.pageTitle}
+                    onChange={(e) => setPageSettings({ ...pageSettings, pageTitle: e.target.value })}
+                    className="mt-1"
+                    placeholder="Selected Writing"
+                  />
+                </div>
+                <div>
+                  <Label>Intro Text</Label>
+                  <Textarea
+                    value={pageSettings.introText}
+                    onChange={(e) => setPageSettings({ ...pageSettings, introText: e.target.value })}
+                    className="mt-1"
+                    rows={2}
+                    placeholder="Articles on product, AI, and technology."
+                  />
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={pageSettings.enablePage}
+                      onCheckedChange={(checked) => setPageSettings({ ...pageSettings, enablePage: checked })}
+                    />
+                    <Label>Enable Page</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={pageSettings.autoHideIfEmpty}
+                      onCheckedChange={(checked) => setPageSettings({ ...pageSettings, autoHideIfEmpty: checked })}
+                    />
+                    <Label>Auto-hide if empty</Label>
+                  </div>
+                </div>
+              </div>
+              <Button onClick={savePageSettings} disabled={saving}>
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Save className="w-4 h-4 mr-2" />
+                Save Settings
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

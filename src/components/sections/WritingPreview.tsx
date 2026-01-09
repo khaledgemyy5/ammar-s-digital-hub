@@ -1,17 +1,19 @@
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { trackWritingClick } from '@/lib/analytics';
-import type { WritingItem } from '@/types/database';
+import type { WritingItem, WritingCategory } from '@/types/database';
 import { format } from 'date-fns';
 
 interface WritingPreviewProps {
   title?: string;
   items?: WritingItem[];
+  categories?: WritingCategory[];
 }
 
 export function WritingPreview({
   title = 'Selected Writing',
-  items = []
+  items = [],
+  categories = []
 }: WritingPreviewProps) {
   // Auto-hide if no items
   if (!items || items.length === 0) {
@@ -49,6 +51,11 @@ export function WritingPreview({
     }
   };
 
+  const getCategoryName = (categoryId: string | undefined): string => {
+    if (!categoryId) return '';
+    return categories.find(c => c.id === categoryId)?.name || '';
+  };
+
   return (
     <section className="section-spacing">
       <div className="container-content">
@@ -67,8 +74,9 @@ export function WritingPreview({
         {/* Simple rows */}
         <div className="divide-y divide-border/30">
           {displayItems.map((item) => {
+            const categoryName = getCategoryName(item.category_id);
             const dateStr = formatDate(item.published_at);
-            const meta = [dateStr, item.platform_label].filter(Boolean).join(' • ');
+            const meta = [categoryName, dateStr, item.platform_label].filter(Boolean).join(' • ');
             
             return (
               <a
