@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { forwardRef } from 'react';
 import { Github, Linkedin, Mail } from 'lucide-react';
 
 interface FooterProps {
@@ -8,16 +8,16 @@ interface FooterProps {
   siteName?: string;
 }
 
-export function Footer({
+export const Footer = forwardRef<HTMLElement, FooterProps>(function Footer({
   email = 'hello@ammarjaber.com',
   linkedin = 'https://linkedin.com/in/ammarjaber',
   github = 'https://github.com/ammarjaber',
   siteName = 'Ammar Jaber'
-}: FooterProps) {
+}, ref) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-secondary/30">
+    <footer ref={ref} className="border-t border-border bg-secondary/30">
       <div className="container-content py-12 md:py-16">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Copyright */}
@@ -63,6 +63,6 @@ export function Footer({
       </div>
     </footer>
   );
-}
+});
 
 export default Footer;
