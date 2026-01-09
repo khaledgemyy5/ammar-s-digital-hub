@@ -3,9 +3,10 @@ export { supabase } from '@/integrations/supabase/client';
 import { supabase } from '@/integrations/supabase/client';
 
 // Helper to check if Supabase is properly configured
+// Supports both VITE_SUPABASE_ANON_KEY and VITE_SUPABASE_PUBLISHABLE_KEY
 export const isSupabaseConfigured = (): boolean => {
   const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   return Boolean(url && key);
 };
 
