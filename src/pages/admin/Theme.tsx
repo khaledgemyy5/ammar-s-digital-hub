@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Save, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Loader2, Sun, Moon, Monitor, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { adminGetSiteSettings, adminUpdateSiteSettings, clearCache } from '@/lib/db';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { ThemeConfig } from '@/types/database';
 
 const fonts = [
@@ -27,16 +28,20 @@ const presetColors = [
   { value: '#F59E0B', label: 'Amber' },
   { value: '#EF4444', label: 'Red' },
   { value: '#EC4899', label: 'Pink' },
+  { value: '#06B6D4', label: 'Cyan' },
+  { value: '#14B8A6', label: 'Teal' },
 ];
 
 export default function AdminTheme() {
+  const { setTheme: applyTheme, applyTheme: previewTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [theme, setTheme] = useState<ThemeConfig>({
+  const [theme, setThemeState] = useState<ThemeConfig>({
     accentColor: '#135BEC',
     defaultMode: 'light',
     font: 'ibm-plex',
   });
+  const [originalTheme, setOriginalTheme] = useState<ThemeConfig | null>(null);
 
   useEffect(() => {
     loadData();
@@ -45,9 +50,19 @@ export default function AdminTheme() {
   const loadData = async () => {
     const settings = await adminGetSiteSettings();
     if (settings?.theme) {
-      setTheme(settings.theme as ThemeConfig);
+      const loadedTheme = settings.theme as ThemeConfig;
+      setThemeState(loadedTheme);
+      setOriginalTheme(loadedTheme);
     }
     setLoading(false);
+  };
+
+  // Apply theme preview immediately when values change
+  const updateTheme = (updates: Partial<ThemeConfig>) => {
+    const newTheme = { ...theme, ...updates };
+    setThemeState(newTheme);
+    // Apply preview immediately
+    previewTheme(newTheme);
   };
 
   const handleSave = async () => {
@@ -57,7 +72,9 @@ export default function AdminTheme() {
 
       if (success) {
         clearCache();
-        toast.success('Theme saved');
+        applyTheme(theme);
+        setOriginalTheme(theme);
+        toast.success('Theme saved successfully');
       } else {
         toast.error('Failed to save theme');
       }
@@ -67,6 +84,15 @@ export default function AdminTheme() {
       setSaving(false);
     }
   };
+
+  const handleCancel = () => {
+    if (originalTheme) {
+      setThemeState(originalTheme);
+      previewTheme(originalTheme);
+    }
+  };
+
+  const hasChanges = JSON.stringify(theme) !== JSON.stringify(originalTheme);
 
   if (loading) {
     return (
@@ -81,37 +107,48 @@ export default function AdminTheme() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Theme</h1>
-          <p className="text-muted-foreground">Customize your site's appearance</p>
+          <p className="text-muted-foreground">Customize your site's appearance - changes preview instantly</p>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          Save Changes
-        </Button>
+        <div className="flex gap-2">
+          {hasChanges && (
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving || !hasChanges}>
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Changes
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6">
-        {/* Accent Color */}
+        {/* Primary/Accent Color */}
         <Card>
           <CardHeader>
             <CardTitle>Accent Color</CardTitle>
-            <CardDescription>Choose a primary accent color for your site</CardDescription>
+            <CardDescription>Choose a primary accent color for buttons, links, and highlights</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-3">
               {presetColors.map((color) => (
                 <button
                   key={color.value}
-                  onClick={() => setTheme({ ...theme, accentColor: color.value })}
+                  onClick={() => updateTheme({ accentColor: color.value })}
                   className={`
-                    w-10 h-10 rounded-lg transition-all
+                    w-12 h-12 rounded-xl transition-all relative
                     ${theme.accentColor === color.value 
-                      ? 'ring-2 ring-offset-2 ring-foreground' 
-                      : 'hover:scale-110'
+                      ? 'ring-2 ring-offset-2 ring-foreground scale-110' 
+                      : 'hover:scale-105'
                     }
                   `}
                   style={{ backgroundColor: color.value }}
                   title={color.label}
-                />
+                >
+                  {theme.accentColor === color.value && (
+                    <Check className="w-5 h-5 text-white absolute inset-0 m-auto" />
+                  )}
+                </button>
               ))}
             </div>
             
@@ -121,14 +158,14 @@ export default function AdminTheme() {
                 <Input
                   type="color"
                   value={theme.accentColor}
-                  onChange={(e) => setTheme({ ...theme, accentColor: e.target.value })}
-                  className="w-12 h-10 p-1 cursor-pointer"
+                  onChange={(e) => updateTheme({ accentColor: e.target.value })}
+                  className="w-14 h-10 p-1 cursor-pointer rounded-lg"
                 />
               </div>
               <Input
                 value={theme.accentColor}
-                onChange={(e) => setTheme({ ...theme, accentColor: e.target.value })}
-                className="w-32"
+                onChange={(e) => updateTheme({ accentColor: e.target.value })}
+                className="w-32 font-mono text-sm"
                 placeholder="#135BEC"
               />
             </div>
@@ -146,17 +183,35 @@ export default function AdminTheme() {
               {fonts.map((font) => (
                 <button
                   key={font.value}
-                  onClick={() => setTheme({ ...theme, font: font.value as ThemeConfig['font'] })}
+                  onClick={() => updateTheme({ font: font.value as ThemeConfig['font'] })}
                   className={`
-                    text-left p-4 rounded-lg border transition-colors
+                    text-left p-4 rounded-lg border transition-all
                     ${theme.font === font.value 
-                      ? 'border-primary bg-accent' 
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary' 
                       : 'border-border hover:bg-muted'
                     }
                   `}
                 >
-                  <p className="font-medium">{font.label}</p>
-                  <p className="text-sm text-muted-foreground">{font.description}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p 
+                        className="font-medium"
+                        style={{ 
+                          fontFamily: font.value === 'ibm-plex' 
+                            ? "'IBM Plex Serif', Georgia, serif" 
+                            : font.value === 'inter' 
+                            ? "'Inter', system-ui, sans-serif"
+                            : 'system-ui, sans-serif'
+                        }}
+                      >
+                        {font.label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{font.description}</p>
+                    </div>
+                    {theme.font === font.value && (
+                      <Check className="w-5 h-5 text-primary" />
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
@@ -176,17 +231,20 @@ export default function AdminTheme() {
                 return (
                   <button
                     key={mode.value}
-                    onClick={() => setTheme({ ...theme, defaultMode: mode.value as ThemeConfig['defaultMode'] })}
+                    onClick={() => updateTheme({ defaultMode: mode.value as ThemeConfig['defaultMode'] })}
                     className={`
-                      flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors
+                      flex items-center gap-2 px-5 py-3 rounded-lg border transition-all flex-1 justify-center
                       ${theme.defaultMode === mode.value 
-                        ? 'border-primary bg-accent' 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary' 
                         : 'border-border hover:bg-muted'
                       }
                     `}
                   >
                     <Icon className="w-5 h-5" />
                     <span>{mode.label}</span>
+                    {theme.defaultMode === mode.value && (
+                      <Check className="w-4 h-4 text-primary ml-1" />
+                    )}
                   </button>
                 );
               })}
@@ -194,32 +252,56 @@ export default function AdminTheme() {
           </CardContent>
         </Card>
 
-        {/* Preview */}
+        {/* Live Preview */}
         <Card>
           <CardHeader>
-            <CardTitle>Preview</CardTitle>
+            <CardTitle>Live Preview</CardTitle>
+            <CardDescription>See how your changes look in real-time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="p-6 rounded-lg border border-border bg-card">
               <div 
-                className="w-full h-2 rounded-full mb-4"
+                className="w-full h-2 rounded-full mb-6"
                 style={{ backgroundColor: theme.accentColor }}
               />
               <h3 
-                className="text-lg font-semibold mb-2"
-                style={{ fontFamily: theme.font === 'ibm-plex' ? "'IBM Plex Serif', Georgia, serif" : "'Inter', system-ui, sans-serif" }}
+                className="text-xl font-semibold mb-3"
+                style={{ 
+                  fontFamily: theme.font === 'ibm-plex' 
+                    ? "'IBM Plex Serif', Georgia, serif" 
+                    : theme.font === 'inter'
+                    ? "'Inter', system-ui, sans-serif"
+                    : 'system-ui, sans-serif'
+                }}
               >
                 Sample Heading
               </h3>
-              <p className="text-muted-foreground mb-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-                This is how your content will look with the selected theme settings.
-              </p>
-              <button
-                className="px-4 py-2 rounded-lg text-white font-medium"
-                style={{ backgroundColor: theme.accentColor }}
+              <p 
+                className="text-muted-foreground mb-6" 
+                style={{ 
+                  fontFamily: "'Inter', system-ui, sans-serif" 
+                }}
               >
-                Sample Button
-              </button>
+                This is how your content will look with the selected theme settings.
+                The accent color is applied to buttons, links, and interactive elements.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  className="px-5 py-2.5 rounded-lg text-white font-medium transition-colors"
+                  style={{ backgroundColor: theme.accentColor }}
+                >
+                  Primary Button
+                </button>
+                <button
+                  className="px-5 py-2.5 rounded-lg font-medium border transition-colors"
+                  style={{ 
+                    borderColor: theme.accentColor, 
+                    color: theme.accentColor 
+                  }}
+                >
+                  Secondary Button
+                </button>
+              </div>
             </div>
           </CardContent>
         </Card>
