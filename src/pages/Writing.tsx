@@ -2,19 +2,25 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SupabaseStatus } from '@/components/ui/SupabaseStatus';
-import { getWritingItems } from '@/lib/db';
+import { getWritingItems, getWritingCategories } from '@/lib/db';
 import { trackPageView, trackWritingClick } from '@/lib/analytics';
-import type { WritingItem } from '@/types/database';
+import type { WritingItem, WritingCategory } from '@/types/database';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function Writing() {
   const [items, setItems] = useState<WritingItem[]>([]);
+  const [categories, setCategories] = useState<WritingCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
 
   useEffect(() => {
     trackPageView('/writing');
     
-    getWritingItems().then((itms) => {
+    Promise.all([
+      getWritingItems(),
+      getWritingCategories()
+    ]).then(([itms, cats]) => {
       // Sort items: featured first, then by published_at (newest), then order_index
       const sorted = itms.sort((a, b) => {
         if (a.featured && !b.featured) return -1;
@@ -27,6 +33,7 @@ export default function Writing() {
         return (a.order_index || 0) - (b.order_index || 0);
       });
       setItems(sorted);
+      setCategories(cats);
       setLoading(false);
     });
   }, []);
@@ -48,6 +55,11 @@ export default function Writing() {
     }
   };
 
+  // Filter items by category
+  const filteredItems = activeCategory === 'all' 
+    ? items 
+    : items.filter(item => item.category_id === activeCategory);
+
   return (
     <div className="section-spacing">
       <div className="container-content">
@@ -64,6 +76,39 @@ export default function Writing() {
           <SupabaseStatus />
         </div>
 
+        {/* Category Tabs */}
+        {!loading && categories.length > 0 && (
+          <div className="mb-6 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 pb-2">
+              <button
+                onClick={() => setActiveCategory('all')}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                  activeCategory === 'all'
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                )}
+              >
+                All
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                    activeCategory === cat.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                  )}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="space-y-0 divide-y divide-border/30">
@@ -77,16 +122,26 @@ export default function Writing() {
         )}
 
         {/* Empty State */}
-        {!loading && items.length === 0 && (
-          <div className="py-12 text-center text-muted-foreground">
-            No writing yet.
+        {!loading && filteredItems.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">
+              {activeCategory === 'all' ? 'No writing yet.' : 'No writing in this category.'}
+            </p>
+            {activeCategory !== 'all' && (
+              <button
+                onClick={() => setActiveCategory('all')}
+                className="text-sm text-primary hover:underline"
+              >
+                View all writing
+              </button>
+            )}
           </div>
         )}
 
         {/* Writing Items - Simple rows */}
-        {!loading && items.length > 0 && (
+        {!loading && filteredItems.length > 0 && (
           <div className="divide-y divide-border/30">
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const dateStr = formatDate(item.published_at);
               const meta = [dateStr, item.platform_label].filter(Boolean).join(' • ');
               
