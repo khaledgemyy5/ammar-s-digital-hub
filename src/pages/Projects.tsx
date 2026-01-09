@@ -25,11 +25,18 @@ export default function Projects() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Extract unique tags from projects
+  // Extract unique tags from projects, limited to 5 for filter UI
   const allTags = useMemo(() => {
-    const tagSet = new Set<string>();
-    projects.forEach(p => p.tags?.forEach(tag => tagSet.add(tag)));
-    return ['All', ...Array.from(tagSet).sort()];
+    const tagCount = new Map<string, number>();
+    projects.forEach(p => p.tags?.forEach(tag => {
+      tagCount.set(tag, (tagCount.get(tag) || 0) + 1);
+    }));
+    // Sort by frequency and take top 5
+    const sortedTags = Array.from(tagCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag]) => tag);
+    return ['All', ...sortedTags];
   }, [projects]);
 
   const filteredProjects = useMemo(() => {

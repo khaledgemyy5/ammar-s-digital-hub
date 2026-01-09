@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import * as React from 'react';
 import { getPublicSiteSettings } from '@/lib/db';
 import type { ThemeConfig } from '@/types/database';
 
@@ -15,7 +15,7 @@ const defaultTheme: ThemeConfig = {
   font: 'ibm-plex',
 };
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined);
 
 // Convert hex to HSL
 function hexToHSL(hex: string): { h: number; s: number; l: number } {
@@ -111,10 +111,10 @@ function applyThemeToDocument(theme: ThemeConfig) {
   }
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeConfig>(defaultTheme);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = React.useState<ThemeConfig>(defaultTheme);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Load theme from settings
     async function loadTheme() {
       const settings = await getPublicSiteSettings();
@@ -154,7 +154,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
+  const context = React.useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
