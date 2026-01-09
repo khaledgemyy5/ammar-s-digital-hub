@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
 
-  const checkAdminStatus = async (): Promise<boolean> => {
+  const checkAdminStatus = React.useCallback(async (): Promise<boolean> => {
     if (!isSupabaseConfigured()) return false;
     
     try {
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return false;
     }
-  };
+  }, []);
 
   React.useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -75,9 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [checkAdminStatus]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = React.useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -87,25 +87,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       return { error: err instanceof Error ? err : new Error('Unknown error') };
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = React.useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setIsAdmin(false);
-  };
+  }, []);
+
+  const value = React.useMemo(() => ({
+    user,
+    session,
+    isAdmin,
+    loading,
+    signIn,
+    signOut,
+    checkAdminStatus,
+  }), [user, session, isAdmin, loading, signIn, signOut, checkAdminStatus]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      isAdmin,
-      loading,
-      signIn,
-      signOut,
-      checkAdminStatus,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
