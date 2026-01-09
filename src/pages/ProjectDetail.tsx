@@ -323,19 +323,25 @@ export default function ProjectDetail() {
       case 'custom_sections':
         return project.content.custom_sections?.length ? (
           <>
-            {project.content.custom_sections.map((custom, i) => (
-              <Section key={i} title={custom.title}>
-                {custom.type === 'bullets' ? (
-                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    {custom.content.split('\n').filter(Boolean).map((line, j) => (
-                      <li key={j}>{line}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground whitespace-pre-wrap">{custom.content}</p>
-                )}
-              </Section>
-            ))}
+            {project.content.custom_sections.map((custom, i) => {
+              const isBullets = custom.kind === 'bullets' || custom.type === 'bullets';
+              const content = custom.contentText || custom.content || '';
+              const bulletItems = custom.bullets || content.split('\n').filter(Boolean);
+              
+              return (
+                <Section key={i} title={custom.title}>
+                  {isBullets ? (
+                    <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                      {bulletItems.map((line, j) => (
+                        <li key={j}>{line}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground whitespace-pre-wrap">{content}</p>
+                  )}
+                </Section>
+              );
+            })}
           </>
         ) : null;
 

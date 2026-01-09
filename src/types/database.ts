@@ -11,13 +11,90 @@ export type ProjectStatus = 'PUBLIC' | 'CONFIDENTIAL' | 'CONCEPT';
 export type DetailLevel = 'FULL' | 'SUMMARY' | 'MINIMAL';
 export type Language = 'AUTO' | 'AR' | 'EN';
 
-// Home section configuration
+// ============ Button Configuration ============
+export type ButtonActionType = 'internal' | 'external' | 'download' | 'mailto' | 'scroll';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline';
+
+export interface ButtonConfig {
+  id: string;
+  label: string;
+  visible: boolean;
+  actionType: ButtonActionType;
+  target: string; // URL, route, email, or section id
+  variant: ButtonVariant;
+  icon?: string;
+}
+
+// ============ Home Section Configurations ============
+
+export interface HeroConfig {
+  name: string;
+  role: string;
+  transitionLine?: string;
+  introLine1: string;
+  introLine2?: string;
+  badges?: string[];
+  ctas: ButtonConfig[];
+}
+
+export interface ExperienceItem {
+  company: string;
+  role: string;
+  years: string;
+  description?: string;
+}
+
+export interface ExperienceSnapshotConfig {
+  items: ExperienceItem[];
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+export interface HowIWorkBullet {
+  icon?: string;
+  title: string;
+  description: string;
+}
+
+export interface HowIWorkConfig {
+  bullets: HowIWorkBullet[];
+}
+
+export interface FeaturedProjectsConfig {
+  limit: number;
+}
+
+export interface WritingPreviewConfig {
+  limit: number;
+  onlyFeatured: boolean;
+}
+
+export interface ContactCTAConfig {
+  headline: string;
+  body: string;
+  buttons: ButtonConfig[];
+}
+
+// Union type for section configs
+export type SectionConfig = 
+  | HeroConfig 
+  | ExperienceSnapshotConfig 
+  | HowIWorkConfig 
+  | FeaturedProjectsConfig 
+  | WritingPreviewConfig 
+  | ContactCTAConfig
+  | Record<string, unknown>;
+
+// Home section with typed config
 export interface HomeSection {
   id: string;
+  type?: 'hero' | 'experience_snapshot' | 'featured_projects' | 'how_i_work' | 'writing_preview' | 'contact_cta';
   visible: boolean;
   order: number;
-  limit?: number;
   titleOverride?: string;
+  config?: SectionConfig;
+  // Legacy support
+  limit?: number;
 }
 
 // Navigation link configuration
@@ -27,10 +104,18 @@ export interface NavLink {
   path: string;
   visible: boolean;
   order: number;
+  autoHideIfEmpty?: boolean;
+}
+
+// Nav configuration with CTA buttons
+export interface NavConfig {
+  links: NavLink[];
+  ctaButtons?: ButtonConfig[];
 }
 
 // Theme configuration
 export interface ThemeConfig {
+  primaryColor?: string;
   accentColor: string;
   defaultMode: 'light' | 'dark' | 'system';
   font: 'inter' | 'ibm-plex' | 'system';
@@ -45,6 +130,15 @@ export interface SEOConfig {
   favicon?: string;
 }
 
+// Resume page content
+export interface ResumeContent {
+  summary?: string;
+  experience?: string;
+  projects?: string;
+  skills?: string;
+  education?: string;
+}
+
 // Page-specific settings
 export interface PageConfig {
   resume: {
@@ -52,19 +146,21 @@ export interface PageConfig {
     pdfUrl?: string;
     showCopyText: boolean;
     showDownload: boolean;
+    content?: ResumeContent;
   };
   contact: {
     enabled: boolean;
     email?: string;
     linkedin?: string;
     calendar?: string;
+    buttons?: ButtonConfig[];
   };
 }
 
 // Site settings (singleton)
 export interface SiteSettings {
   id: string;
-  nav_config: NavLink[];
+  nav_config: NavLink[] | NavConfig;
   home_sections: HomeSection[];
   theme: ThemeConfig;
   seo: SEOConfig;
@@ -75,12 +171,40 @@ export interface SiteSettings {
   updated_at: string;
 }
 
+// ============ Project Types ============
+
 // Project section configuration
 export interface ProjectSection {
   id: string;
   visible: boolean;
   order: number;
   titleOverride?: string;
+}
+
+// Custom section (max 2 per project)
+export interface CustomSection {
+  id: string;
+  title: string;
+  kind?: 'text' | 'bullets';
+  type?: 'text' | 'bullets'; // Legacy support
+  content?: string; // Legacy support
+  contentText?: string;
+  bullets?: string[];
+}
+
+// Project links
+export interface ProjectLinks {
+  demo?: string;
+  repo?: string;
+  docs?: string;
+}
+
+// Project chips
+export interface ProjectChips {
+  role?: string;
+  domain?: string;
+  stage?: string;
+  stack?: string;
 }
 
 // Project content structure
@@ -123,20 +247,19 @@ export interface ProjectContent {
     validation: string;
   }>;
   next_steps?: string[];
-  custom_sections?: Array<{
-    title: string;
-    content: string;
-    type: 'text' | 'bullets';
-  }>;
+  custom_sections?: CustomSection[];
+}
+
+// Project media item (max 3 per project)
+export interface ProjectMediaItem {
+  type: 'image' | 'video';
+  url: string;
+  caption?: string; // Optional for legacy support, but UI should require it
 }
 
 // Project media
 export interface ProjectMedia {
-  items: Array<{
-    type: 'image' | 'video';
-    url: string;
-    caption?: string;
-  }>;
+  items: ProjectMediaItem[];
 }
 
 // Project metrics
@@ -162,9 +285,13 @@ export interface Project {
   media?: ProjectMedia;
   confidential_message?: string;
   related_projects?: string[];
+  chips?: ProjectChips;
+  links?: ProjectLinks;
   created_at: string;
   updated_at: string;
 }
+
+// ============ Writing Types ============
 
 // Writing category
 export interface WritingCategory {
@@ -194,6 +321,8 @@ export interface WritingItem {
   updated_at: string;
 }
 
+// ============ Analytics Types ============
+
 // Analytics event
 export interface AnalyticsEvent {
   id: string;
@@ -203,6 +332,8 @@ export interface AnalyticsEvent {
   sid: string;
   created_at: string;
 }
+
+// ============ Database Schema ============
 
 // Database schema type for Supabase client
 export interface Database {
@@ -260,3 +391,19 @@ export type ProjectWithCategory = Project & {
 export type WritingItemWithCategory = WritingItem & {
   category?: WritingCategory;
 };
+
+// Helper to get nav links from config
+export function getNavLinks(config: NavLink[] | NavConfig): NavLink[] {
+  if (Array.isArray(config)) {
+    return config;
+  }
+  return config.links || [];
+}
+
+// Helper to get nav CTA buttons
+export function getNavCtaButtons(config: NavLink[] | NavConfig): ButtonConfig[] {
+  if (Array.isArray(config)) {
+    return [];
+  }
+  return config.ctaButtons || [];
+}
