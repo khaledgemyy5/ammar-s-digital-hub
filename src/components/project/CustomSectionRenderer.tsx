@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ExternalLink, Play } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { 
   ProjectCustomSection, 
@@ -84,6 +85,15 @@ function EmbedViewer({ url, title }: EmbedViewerProps) {
   );
 }
 
+// Sanitize HTML content with DOMPurify
+function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['strong', 'em', 'a', 'code', 'br'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+    ALLOW_DATA_ATTR: false,
+  });
+}
+
 function renderSectionContent(section: ProjectCustomSection) {
   switch (section.type) {
     case 'markdown':
@@ -92,7 +102,7 @@ function renderSectionContent(section: ProjectCustomSection) {
       return (
         <div className="prose prose-sm dark:prose-invert max-w-none">
           {lines.map((line, i) => {
-            // Headers
+            // Headers (rendered as plain text, not HTML)
             if (line.startsWith('### ')) {
               return <h4 key={i} className="text-base font-semibold mt-4 mb-2">{line.slice(4)}</h4>;
             }
@@ -115,7 +125,9 @@ function renderSectionContent(section: ProjectCustomSection) {
               return <br key={i} />;
             }
             
-            return <p key={i} className="text-muted-foreground mb-2" dangerouslySetInnerHTML={{ __html: text }} />;
+            // Sanitize the HTML before rendering
+            const sanitizedHtml = sanitizeHtml(text);
+            return <p key={i} className="text-muted-foreground mb-2" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
           })}
         </div>
       );
