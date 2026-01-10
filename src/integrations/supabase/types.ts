@@ -234,7 +234,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_site_settings: {
+        Row: {
+          created_at: string | null
+          home_sections: Json | null
+          id: string | null
+          nav_config: Json | null
+          pages: Json | null
+          seo: Json | null
+          theme: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          home_sections?: Json | null
+          id?: string | null
+          nav_config?: Json | null
+          pages?: Json | null
+          seo?: Json | null
+          theme?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          home_sections?: Json | null
+          id?: string | null
+          nav_config?: Json | null
+          pages?: Json | null
+          seo?: Json | null
+          theme?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       bootstrap_set_admin: { Args: { token: string }; Returns: boolean }
