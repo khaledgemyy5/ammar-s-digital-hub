@@ -85,12 +85,16 @@ function EmbedViewer({ url, title }: EmbedViewerProps) {
   );
 }
 
+// Safe URI pattern that blocks javascript:, data:, and other dangerous protocols
+const SAFE_URI_REGEXP = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+
 // Sanitize HTML content with DOMPurify
 function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['strong', 'em', 'a', 'code', 'br'],
     ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
     ALLOW_DATA_ATTR: false,
+    ALLOWED_URI_REGEXP: SAFE_URI_REGEXP,
   });
 }
 
