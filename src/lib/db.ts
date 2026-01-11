@@ -88,13 +88,21 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
   }
 
   try {
+    // Try to get full settings (admin-only) first, fall back to public view
     const { data, error } = await (supabase as any)
       .from('site_settings')
       .select('*')
       .limit(1)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      // If access denied, fall back to public view
+      const publicData = await getPublicSiteSettings();
+      if (publicData) {
+        return publicData as SiteSettings;
+      }
+      throw error;
+    }
     if (data) setCache(cacheKey, data as SiteSettings);
     return data as SiteSettings | null;
   } catch (error) {
@@ -118,9 +126,11 @@ export async function getPublicSiteSettings(): Promise<Omit<SiteSettings, 'admin
   }
 
   try {
+    // Use the secure public_site_settings view which excludes sensitive fields
+    // (admin_user_id, bootstrap_token_hash) - base table requires admin access
     const { data, error } = await (supabase as any)
-      .from('site_settings')
-      .select('id, nav_config, home_sections, theme, seo, pages, created_at, updated_at')
+      .from('public_site_settings')
+      .select('*')
       .limit(1)
       .maybeSingle();
 
