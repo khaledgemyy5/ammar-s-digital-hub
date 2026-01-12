@@ -109,10 +109,15 @@ export type Database = {
           admin_user_id: string | null
           bootstrap_token_hash: string | null
           created_at: string
+          draft_json: Json | null
+          draft_updated_at: string | null
           home_sections: Json
           id: string
           nav_config: Json
           pages: Json
+          published_at: string | null
+          published_json: Json | null
+          published_version: number | null
           seo: Json
           theme: Json
           updated_at: string
@@ -121,10 +126,15 @@ export type Database = {
           admin_user_id?: string | null
           bootstrap_token_hash?: string | null
           created_at?: string
+          draft_json?: Json | null
+          draft_updated_at?: string | null
           home_sections?: Json
           id?: string
           nav_config?: Json
           pages?: Json
+          published_at?: string | null
+          published_json?: Json | null
+          published_version?: number | null
           seo?: Json
           theme?: Json
           updated_at?: string
@@ -133,10 +143,15 @@ export type Database = {
           admin_user_id?: string | null
           bootstrap_token_hash?: string | null
           created_at?: string
+          draft_json?: Json | null
+          draft_updated_at?: string | null
           home_sections?: Json
           id?: string
           nav_config?: Json
           pages?: Json
+          published_at?: string | null
+          published_json?: Json | null
+          published_version?: number | null
           seo?: Json
           theme?: Json
           updated_at?: string
@@ -241,28 +256,34 @@ export type Database = {
           id: string | null
           nav_config: Json | null
           pages: Json | null
+          published_at: string | null
+          published_version: number | null
           seo: Json | null
           theme: Json | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          home_sections?: Json | null
+          home_sections?: never
           id?: string | null
-          nav_config?: Json | null
-          pages?: Json | null
-          seo?: Json | null
-          theme?: Json | null
+          nav_config?: never
+          pages?: never
+          published_at?: string | null
+          published_version?: number | null
+          seo?: never
+          theme?: never
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          home_sections?: Json | null
+          home_sections?: never
           id?: string | null
-          nav_config?: Json | null
-          pages?: Json | null
-          seo?: Json | null
-          theme?: Json | null
+          nav_config?: never
+          pages?: never
+          published_at?: string | null
+          published_version?: number | null
+          seo?: never
+          theme?: never
           updated_at?: string | null
         }
         Relationships: []
@@ -271,6 +292,8 @@ export type Database = {
     Functions: {
       bootstrap_set_admin: { Args: { token: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      publish_site_settings: { Args: never; Returns: Json }
+      save_draft_settings: { Args: { draft_data: Json }; Returns: Json }
     }
     Enums: {
       detail_level: "FULL" | "SUMMARY" | "MINIMAL"

@@ -111,6 +111,15 @@ function applyThemeToDocument(theme: ThemeConfig) {
   }
 }
 
+// Save theme to localStorage for FOUC prevention
+function saveThemeToLocalStorage(theme: ThemeConfig) {
+  try {
+    localStorage.setItem('site_theme', JSON.stringify(theme));
+  } catch (e) {
+    console.warn('Failed to save theme to localStorage:', e);
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<ThemeConfig>(defaultTheme);
 
@@ -122,6 +131,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const loadedTheme = settings.theme as ThemeConfig;
         setThemeState(loadedTheme);
         applyThemeToDocument(loadedTheme);
+        // Cache theme in localStorage for next page load (prevents FOUC)
+        saveThemeToLocalStorage(loadedTheme);
       }
     }
     loadTheme();
@@ -140,6 +151,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: ThemeConfig) => {
     setThemeState(newTheme);
     applyThemeToDocument(newTheme);
+    // Update localStorage cache
+    saveThemeToLocalStorage(newTheme);
   };
 
   const applyTheme = (newTheme: ThemeConfig) => {

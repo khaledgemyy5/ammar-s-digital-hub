@@ -183,6 +183,15 @@ export interface PageConfig {
   };
 }
 
+// Draft/Published JSON structure
+export interface SettingsJson {
+  nav_config?: NavLink[] | NavConfig;
+  home_sections?: HomeSection[];
+  theme?: ThemeConfig;
+  seo?: SEOConfig;
+  pages?: PageConfig;
+}
+
 // Site settings (singleton)
 export interface SiteSettings {
   id: string;
@@ -191,8 +200,29 @@ export interface SiteSettings {
   theme: ThemeConfig;
   seo: SEOConfig;
   pages: PageConfig;
+  // Draft/Published separation
+  draft_json?: SettingsJson;
+  published_json?: SettingsJson;
+  draft_updated_at?: string;
+  published_at?: string;
+  published_version?: number;
+  // Admin
   admin_user_id?: string;
   bootstrap_token_hash?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Public site settings (from view, excludes sensitive data)
+export interface PublicSiteSettings {
+  id: string;
+  nav_config: NavLink[] | NavConfig;
+  home_sections: HomeSection[];
+  theme: ThemeConfig;
+  seo: SEOConfig;
+  pages: PageConfig;
+  published_version?: number;
+  published_at?: string;
   created_at: string;
   updated_at: string;
 }

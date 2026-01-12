@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import type {
   SiteSettings,
+  PublicSiteSettings,
+  SettingsJson,
   Project,
   WritingCategory,
   WritingItem,
@@ -111,9 +113,9 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
   }
 }
 
-export async function getPublicSiteSettings(): Promise<Omit<SiteSettings, 'admin_user_id' | 'bootstrap_token_hash'> | null> {
+export async function getPublicSiteSettings(): Promise<PublicSiteSettings | null> {
   const cacheKey = 'public_site_settings';
-  const cached = getCached<Omit<SiteSettings, 'admin_user_id' | 'bootstrap_token_hash'>>(cacheKey);
+  const cached = getCached<PublicSiteSettings>(cacheKey);
   if (cached) return cached;
 
   if (!isSupabaseConfigured()) {
@@ -127,7 +129,7 @@ export async function getPublicSiteSettings(): Promise<Omit<SiteSettings, 'admin
 
   try {
     // Use the secure public_site_settings view which excludes sensitive fields
-    // (admin_user_id, bootstrap_token_hash) - base table requires admin access
+    // and uses published_json for public access
     const { data, error } = await (supabase as any)
       .from('public_site_settings')
       .select('*')
@@ -135,8 +137,8 @@ export async function getPublicSiteSettings(): Promise<Omit<SiteSettings, 'admin
       .maybeSingle();
 
     if (error) throw error;
-    if (data) setCache(cacheKey, data as Omit<SiteSettings, 'admin_user_id' | 'bootstrap_token_hash'>);
-    return data as Omit<SiteSettings, 'admin_user_id' | 'bootstrap_token_hash'> | null;
+    if (data) setCache(cacheKey, data as PublicSiteSettings);
+    return data as PublicSiteSettings | null;
   } catch (error) {
     console.error('Error fetching public site settings:', error);
     return null;
@@ -456,6 +458,96 @@ export async function adminUpdateSiteSettings(updates: Partial<SiteSettings>): P
   } catch (error) {
     console.error('Error updating admin site settings:', error);
     return false;
+  }
+}
+
+// ============ Draft/Publish Functions ============
+
+export interface DraftState {
+  draft_json: SettingsJson;
+  published_json: SettingsJson;
+  draft_updated_at: string | null;
+  published_at: string | null;
+  published_version: number;
+  hasUnpublishedChanges: boolean;
+}
+
+export async function getDraftState(): Promise<DraftState | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const { data, error } = await (supabase as any)
+      .from('site_settings')
+      .select('draft_json, published_json, draft_updated_at, published_at, published_version')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    const hasUnpublishedChanges = JSON.stringify(data.draft_json) !== JSON.stringify(data.published_json);
+
+    return {
+      draft_json: data.draft_json || {},
+      published_json: data.published_json || {},
+      draft_updated_at: data.draft_updated_at,
+      published_at: data.published_at,
+      published_version: data.published_version || 0,
+      hasUnpublishedChanges,
+    };
+  } catch (error) {
+    console.error('Error fetching draft state:', error);
+    return null;
+  }
+}
+
+export async function saveDraftSettings(draftData: SettingsJson): Promise<{ success: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) return { success: false, error: 'Supabase not configured' };
+
+  console.log('[Draft] Starting save draft...', draftData);
+
+  try {
+    const { data, error } = await (supabase as any)
+      .rpc('save_draft_settings', { draft_data: draftData });
+
+    if (error) {
+      console.error('[Draft] Save draft error:', error);
+      throw error;
+    }
+
+    console.log('[Draft] Save draft success:', data);
+    clearCache();
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Draft] Save draft failed:', error);
+    return { success: false, error: error.message || 'Failed to save draft' };
+  }
+}
+
+export async function publishSettings(): Promise<{ success: boolean; version?: number; error?: string }> {
+  if (!isSupabaseConfigured()) return { success: false, error: 'Supabase not configured' };
+
+  console.log('[Publish] Starting publish...');
+
+  try {
+    const { data, error } = await (supabase as any)
+      .rpc('publish_site_settings');
+
+    if (error) {
+      console.error('[Publish] Publish error:', error);
+      throw error;
+    }
+
+    console.log('[Publish] Publish success:', data);
+    clearCache();
+    
+    return { 
+      success: data?.success || false, 
+      version: data?.version 
+    };
+  } catch (error: any) {
+    console.error('[Publish] Publish failed:', error);
+    return { success: false, error: error.message || 'Failed to publish' };
   }
 }
 
