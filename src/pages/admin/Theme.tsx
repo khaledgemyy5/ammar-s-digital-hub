@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Save, Loader2, Sun, Moon, Monitor, Check } from 'lucide-react';
+import { Save, Loader2, Sun, Moon, Monitor, Check, Upload, Eye, Clock, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { adminGetSiteSettings, adminUpdateSiteSettings, clearCache } from '@/lib/db';
+import { adminGetSiteSettings, saveDraftSettings, publishSettings, getDraftState, clearCache, type DraftState } from '@/lib/db';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { ThemeConfig } from '@/types/database';
 
@@ -23,7 +34,7 @@ const modes = [
 
 const presetColors = [
   { value: '#135BEC', label: 'Blue' },
-  { value: '#0B1F3B', label: 'Navy' },
+  { value: '#0B1F3A', label: 'Navy' },
   { value: '#10B981', label: 'Green' },
   { value: '#8B5CF6', label: 'Purple' },
   { value: '#F59E0B', label: 'Amber' },
@@ -37,25 +48,49 @@ export default function AdminTheme() {
   const { setTheme: applyTheme, applyTheme: previewTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  
   const [theme, setThemeState] = useState<ThemeConfig>({
     accentColor: '#135BEC',
     defaultMode: 'light',
     font: 'ibm-plex',
   });
   const [originalTheme, setOriginalTheme] = useState<ThemeConfig | null>(null);
+  const [draftState, setDraftState] = useState<DraftState | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const settings = await adminGetSiteSettings();
-    if (settings?.theme) {
-      const loadedTheme = settings.theme as ThemeConfig;
-      setThemeState(loadedTheme);
-      setOriginalTheme(loadedTheme);
+    try {
+      // Load current settings and draft state
+      const [settings, state] = await Promise.all([
+        adminGetSiteSettings(),
+        getDraftState(),
+      ]);
+      
+      if (settings?.theme) {
+        const loadedTheme = settings.theme as ThemeConfig;
+        setThemeState(loadedTheme);
+        setOriginalTheme(loadedTheme);
+      }
+      
+      // If we have draft_json with theme, use that instead
+      if (state?.draft_json?.theme) {
+        const draftTheme = state.draft_json.theme as ThemeConfig;
+        setThemeState(draftTheme);
+        setOriginalTheme(draftTheme);
+      }
+      
+      setDraftState(state);
+    } catch (error) {
+      console.error('Error loading theme data:', error);
+      toast.error('Failed to load theme settings');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Apply theme preview immediately when values change
@@ -66,23 +101,69 @@ export default function AdminTheme() {
     previewTheme(newTheme);
   };
 
-  const handleSave = async () => {
+  const handleSaveDraft = async () => {
     setSaving(true);
+    console.log('[Theme] Starting save draft...', theme);
+    
     try {
-      const success = await adminUpdateSiteSettings({ theme });
-
-      if (success) {
-        clearCache();
-        applyTheme(theme);
+      const result = await saveDraftSettings({ theme });
+      
+      if (result.success) {
         setOriginalTheme(theme);
-        toast.success('Theme saved successfully');
+        // Refresh draft state
+        const newState = await getDraftState();
+        setDraftState(newState);
+        toast.success('Draft saved successfully');
+        console.log('[Theme] Draft saved successfully');
       } else {
-        toast.error('Failed to save theme');
+        toast.error(result.error || 'Failed to save draft');
+        console.error('[Theme] Draft save failed:', result.error);
       }
-    } catch (err) {
-      toast.error('Error saving theme');
+    } catch (err: any) {
+      console.error('[Theme] Draft save error:', err);
+      toast.error('Error saving draft: ' + (err.message || 'Unknown error'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    setPublishing(true);
+    setShowPublishDialog(false);
+    console.log('[Theme] Starting publish...');
+    
+    try {
+      // First save any pending changes as draft
+      if (hasLocalChanges) {
+        const saveResult = await saveDraftSettings({ theme });
+        if (!saveResult.success) {
+          toast.error('Failed to save draft before publishing: ' + saveResult.error);
+          return;
+        }
+      }
+      
+      const result = await publishSettings();
+      
+      if (result.success) {
+        // Apply the theme globally
+        applyTheme(theme);
+        // Clear cache to ensure fresh data
+        clearCache();
+        // Refresh draft state
+        const newState = await getDraftState();
+        setDraftState(newState);
+        setOriginalTheme(theme);
+        toast.success(`Published successfully! Version ${result.version}`);
+        console.log('[Theme] Publish success, version:', result.version);
+      } else {
+        toast.error(result.error || 'Failed to publish');
+        console.error('[Theme] Publish failed:', result.error);
+      }
+    } catch (err: any) {
+      console.error('[Theme] Publish error:', err);
+      toast.error('Error publishing: ' + (err.message || 'Unknown error'));
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -93,7 +174,14 @@ export default function AdminTheme() {
     }
   };
 
-  const hasChanges = JSON.stringify(theme) !== JSON.stringify(originalTheme);
+  const handlePreviewDraft = () => {
+    // Open public site with preview param
+    const previewUrl = `${window.location.origin}/?preview=draft`;
+    window.open(previewUrl, '_blank');
+  };
+
+  const hasLocalChanges = JSON.stringify(theme) !== JSON.stringify(originalTheme);
+  const hasUnpublishedChanges = draftState?.hasUnpublishedChanges || hasLocalChanges;
 
   if (loading) {
     return (
@@ -105,23 +193,110 @@ export default function AdminTheme() {
 
   return (
     <div className="space-y-6">
+      {/* Status Bar */}
+      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Draft:</span>
+          {hasLocalChanges ? (
+            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+              <Clock className="w-3 h-3 mr-1" />
+              Unsaved Changes
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              Saved
+            </Badge>
+          )}
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Published:</span>
+          {draftState?.published_version ? (
+            <Badge variant="secondary">
+              v{draftState.published_version} • {draftState.published_at 
+                ? new Date(draftState.published_at).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) 
+                : 'Never'}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground">Not published</Badge>
+          )}
+        </div>
+        {hasUnpublishedChanges && (
+          <>
+            <div className="h-4 w-px bg-border" />
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              Unpublished changes
+            </Badge>
+          </>
+        )}
+      </div>
+
+      {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Theme</h1>
           <p className="text-muted-foreground">Customize your site's appearance - changes preview instantly</p>
         </div>
         <div className="flex gap-2">
-          {hasChanges && (
-            <Button variant="outline" onClick={handleCancel}>
+          {hasLocalChanges && (
+            <Button variant="ghost" onClick={handleCancel} disabled={saving || publishing}>
               Cancel
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving || !hasChanges}>
+          <Button 
+            variant="outline" 
+            onClick={handlePreviewDraft}
+            disabled={saving || publishing}
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Preview Draft
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleSaveDraft} 
+            disabled={saving || publishing || !hasLocalChanges}
+          >
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Save Changes
+            Save Draft
+          </Button>
+          <Button 
+            onClick={() => setShowPublishDialog(true)} 
+            disabled={saving || publishing || (!hasUnpublishedChanges && !hasLocalChanges)}
+          >
+            {publishing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+            Publish
           </Button>
         </div>
       </div>
+
+      {/* Publish Confirmation Dialog */}
+      <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish changes to public site?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will make your theme changes visible to all visitors immediately.
+              {draftState?.published_version && (
+                <span className="block mt-2 text-sm">
+                  Current version: v{draftState.published_version} → New version: v{draftState.published_version + 1}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePublish}>
+              Publish Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="grid gap-6">
         {/* Primary/Accent Color */}
@@ -137,7 +312,7 @@ export default function AdminTheme() {
                   key={color.value}
                   onClick={() => updateTheme({ accentColor: color.value })}
                   className={`
-                    w-12 h-12 rounded-xl transition-all relative
+                    w-12 h-12 rounded-xl transition-all relative group
                     ${theme.accentColor === color.value 
                       ? 'ring-2 ring-offset-2 ring-foreground scale-110' 
                       : 'hover:scale-105'
@@ -147,13 +322,16 @@ export default function AdminTheme() {
                   title={color.label}
                 >
                   {theme.accentColor === color.value && (
-                    <Check className="w-5 h-5 text-white absolute inset-0 m-auto" />
+                    <Check className="w-5 h-5 text-white absolute inset-0 m-auto drop-shadow-md" />
                   )}
+                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    {color.label}
+                  </span>
                 </button>
               ))}
             </div>
             
-            <div className="flex items-center gap-4 pt-2">
+            <div className="flex items-center gap-4 pt-4">
               <div className="flex items-center gap-2">
                 <Label className="text-sm text-muted-foreground">Custom:</Label>
                 <Input

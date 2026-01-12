@@ -17,6 +17,82 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Theme initialization script - runs before React to prevent FOUC -->
+    <script>
+      (function() {
+        try {
+          // Try to get cached theme from localStorage first
+          var cachedTheme = localStorage.getItem('site_theme');
+          var theme = cachedTheme ? JSON.parse(cachedTheme) : null;
+          
+          // Apply theme immediately if available
+          if (theme) {
+            var root = document.documentElement;
+            
+            // Apply accent color
+            if (theme.accentColor) {
+              // Convert hex to HSL
+              var hex = theme.accentColor.replace(/^#/, '');
+              var r = parseInt(hex.substring(0, 2), 16) / 255;
+              var g = parseInt(hex.substring(2, 4), 16) / 255;
+              var b = parseInt(hex.substring(4, 6), 16) / 255;
+              var max = Math.max(r, g, b);
+              var min = Math.min(r, g, b);
+              var h = 0, s = 0, l = (max + min) / 2;
+              if (max !== min) {
+                var d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                  case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                  case g: h = ((b - r) / d + 2) / 6; break;
+                  case b: h = ((r - g) / d + 4) / 6; break;
+                }
+              }
+              h = Math.round(h * 360);
+              s = Math.round(s * 100);
+              l = Math.round(l * 100);
+              root.style.setProperty('--primary', h + ' ' + s + '% ' + l + '%');
+              root.style.setProperty('--accent', h + ' ' + s + '% ' + Math.min(l + 40, 95) + '%');
+              root.style.setProperty('--ring', h + ' ' + s + '% ' + l + '%');
+            }
+            
+            // Apply font
+            if (theme.font) {
+              switch (theme.font) {
+                case 'ibm-plex':
+                  root.style.setProperty('--font-heading', "'IBM Plex Serif', Georgia, serif");
+                  root.style.setProperty('--font-body', "'Inter', system-ui, sans-serif");
+                  break;
+                case 'inter':
+                  root.style.setProperty('--font-heading', "'Inter', system-ui, sans-serif");
+                  root.style.setProperty('--font-body', "'Inter', system-ui, sans-serif");
+                  break;
+                case 'system':
+                  root.style.setProperty('--font-heading', 'system-ui, sans-serif');
+                  root.style.setProperty('--font-body', 'system-ui, sans-serif');
+                  break;
+              }
+            }
+            
+            // Apply dark/light mode
+            if (theme.defaultMode === 'dark') {
+              root.classList.add('dark');
+            } else if (theme.defaultMode === 'light') {
+              root.classList.remove('dark');
+            } else if (theme.defaultMode === 'system') {
+              if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                root.classList.add('dark');
+              } else {
+                root.classList.remove('dark');
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Theme initialization failed:', e);
+        }
+      })();
+    </script>
   </head>
 
   <body>
